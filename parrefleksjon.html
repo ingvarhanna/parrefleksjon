@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Parrefleksjon</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FAF7F2;
+    --warm-white: #FFFDF9;
+    --ink: #1C1814;
+    --ink-light: #4A4540;
+    --ink-muted: #9A9490;
+    --gold: #B8924A;
+    --gold-light: #E8D5B0;
+    --gold-pale: #F5EDD8;
+    --rose: #C4716A;
+    --border: rgba(28,24,20,0.1);
+    --border-strong: rgba(28,24,20,0.2);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--ink); min-height: 100vh; }
+  .app { max-width: 560px; margin: 0 auto; padding: 1.5rem 1rem 5rem; }
+
+  .header { text-align: center; padding: 2rem 0 1.75rem; border-bottom: 0.5px solid var(--border); margin-bottom: 1.75rem; }
+  .header-eyebrow { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.6rem; }
+  .header h1 { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 300; line-height: 1.1; margin-bottom: 0.4rem; }
+  .header h1 em { font-style: italic; color: var(--gold); }
+  .header-sub { font-size: 12px; color: var(--ink-muted); line-height: 1.6; }
+
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card { background: var(--warm-white); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1rem; }
+  .card-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--ink); margin-bottom: 0.2rem; }
+  .card-sub { font-size: 13px; color: var(--ink-muted); line-height: 1.55; margin-bottom: 1rem; }
+
+  .field-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+  .field-group label { font-size: 11px; font-weight: 500; color: var(--ink-light); letter-spacing: 0.06em; text-transform: uppercase; }
+  input[type="text"], textarea {
+    background: var(--cream); border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); padding: 11px 13px;
+    font-size: 15px; font-family: 'DM Sans', sans-serif; color: var(--ink);
+    outline: none; width: 100%;
+  }
+  input[type="text"]:focus, textarea:focus { border-color: var(--gold); }
+  input[type="text"]::placeholder, textarea::placeholder { color: var(--ink-muted); }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; font-size: 14px; }
+
+  .btn { display: block; width: 100%; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.15s; border: none; text-align: center; }
+  .btn-primary { background: var(--ink); color: var(--warm-white); }
+  .btn-primary:active { opacity: 0.8; }
+  .btn-ghost { background: transparent; border: 0.5px solid var(--border-strong); color: var(--ink); }
+  .btn-ghost:active { background: var(--gold-pale); }
+  .btn-gold { background: var(--gold); color: var(--warm-white); }
+  .btn-gold:active { opacity: 0.85; }
+  .btn-sm { width: auto; display: inline-block; padding: 10px 18px; font-size: 14px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 1.25rem; }
+  .btn-row .btn { flex: 1; }
+
+  .partner-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 0.75rem; }
+  .partner-btn { background: var(--warm-white); border: 0.5px solid var(--border-strong); border-radius: var(--radius); padding: 1.25rem 0.75rem; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .partner-btn:active { background: var(--gold-pale); border-color: var(--gold); }
+  .partner-btn.done-btn { opacity: 0.4; pointer-events: none; }
+  .partner-icon { font-size: 22px; margin-bottom: 6px; }
+  .partner-name { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--ink); display: block; margin-bottom: 2px; }
+  .partner-hint { font-size: 11px; color: var(--ink-muted); }
+
+  .q-progress { display: flex; gap: 5px; margin-bottom: 1.25rem; }
+  .q-dot { height: 3px; flex: 1; background: var(--border-strong); border-radius: 99px; transition: background 0.3s; }
+  .q-dot.done { background: var(--gold); }
+  .q-dot.active { background: var(--gold-light); }
+
+  .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; }
+  .q-counter { font-size: 11px; color: var(--ink-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .q-badge { font-size: 10px; padding: 3px 9px; border-radius: 99px; font-weight: 500; }
+  .badge-private { background: #FAECE7; color: #7A3828; }
+  .badge-shared { background: #E1F5EE; color: #0F5E46; }
+
+  .q-text { font-family: 'Cormorant Garamond', serif; font-size: 21px; font-weight: 400; color: var(--ink); line-height: 1.4; margin-bottom: 1.1rem; }
+
+  .statement-label { font-size: 14px; color: var(--ink-light); line-height: 1.5; margin-bottom: 0.75rem; font-style: italic; }
+  .scale-row { display: flex; gap: 6px; margin-bottom: 0.4rem; }
+  .scale-btn { flex: 1; padding: 12px 4px; background: var(--cream); border: 0.5px solid var(--border-strong); border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.12s; color: var(--ink); }
+  .scale-btn:active { background: var(--gold-pale); }
+  .scale-btn.selected { background: var(--gold); border-color: var(--gold); color: var(--warm-white); }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--ink-muted); margin-bottom: 1rem; }
+
+  .statements-block { display: flex; flex-direction: column; gap: 1rem; }
+  .statement-divider { height: 0.5px; background: var(--border); }
+
+  .privacy-note { background: var(--gold-pale); border: 0.5px solid var(--gold-light); border-radius: var(--radius-sm); padding: 10px 13px; font-size: 12px; color: var(--ink-light); line-height: 1.5; margin-bottom: 1rem; display: flex; gap: 8px; align-items: flex-start; }
+
+  .status-row { display: flex; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .status-pill { font-size: 12px; padding: 4px 12px; border-radius: 99px; border: 0.5px solid var(--border); color: var(--ink-muted); }
+  .status-pill.done { background: var(--gold-pale); border-color: var(--gold-light); color: var(--gold); }
+
+  .waiting-box { text-align: center; padding: 1.75rem 1rem; }
+  .waiting-icon { font-size: 28px; margin-bottom: 0.75rem; }
+  .waiting-title { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 400; color: var(--ink); margin-bottom: 0.4rem; }
+  .waiting-sub { font-size: 13px; color: var(--ink-muted); line-height: 1.6; margin-bottom: 1.25rem; }
+
+  .loading-overlay { text-align: center; padding: 2.5rem 1rem; }
+  .loading-spinner { display: inline-block; width: 26px; height: 26px; border: 2px solid var(--gold-light); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 0.85rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--ink-muted); font-style: italic; }
+
+  .analysis-label { font-size: 10px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 8px; }
+  .analysis-label::after { content: ''; flex: 1; height: 0.5px; background: var(--gold-light); }
+  .analysis-text { font-size: 15px; color: var(--ink-light); line-height: 1.8; white-space: pre-wrap; }
+  .private-box { background: #FAF0ED; border: 0.5px solid #E8C5BC; border-radius: var(--radius); padding: 1.1rem 1.25rem; margin-bottom: 1rem; }
+  .private-box .analysis-label { color: var(--rose); }
+  .private-box .analysis-label::after { background: #E8C5BC; }
+
+  .chat-area { border: 0.5px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 0.85rem; }
+  .chat-messages { padding: 0.85rem; min-height: 80px; max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: var(--cream); }
+  .chat-msg { padding: 9px 13px; border-radius: var(--radius-sm); font-size: 14px; line-height: 1.6; max-width: 90%; }
+  .chat-msg.user { background: var(--ink); color: var(--warm-white); align-self: flex-end; }
+  .chat-msg.ai { background: var(--warm-white); border: 0.5px solid var(--border); color: var(--ink); align-self: flex-start; }
+  .chat-msg.ai.loading { color: var(--ink-muted); font-style: italic; }
+  .chat-input-row { display: flex; border-top: 0.5px solid var(--border); }
+  .chat-input-row textarea { border: none; border-radius: 0; min-height: 48px; max-height: 120px; background: var(--warm-white); resize: none; padding: 12px; font-size: 14px; flex: 1; }
+  .chat-input-row textarea:focus { border: none; }
+  .chat-send { background: var(--ink); color: var(--warm-white); border: none; padding: 0 16px; cursor: pointer; font-size: 16px; flex-shrink: 0; }
+
+  .ornament { text-align: center; color: var(--gold-light); font-size: 16px; letter-spacing: 0.3em; margin: 1.25rem 0; }
+
+  .onb-step { display: none; }
+  .onb-step.active { display: block; }
+  .onb-progress { display: flex; gap: 4px; margin-bottom: 1.25rem; }
+  .onb-dot { height: 2px; flex: 1; background: var(--border-strong); border-radius: 99px; }
+  .onb-dot.done { background: var(--gold); }
+  .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .person-label { font-size: 13px; font-weight: 500; color: var(--gold); margin-bottom: 0.85rem; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-eyebrow">Ukentlig refleksjon</div>
+    <h1>Par<em>refleksjon</em></h1>
+    <p class="header-sub">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
+  </div>
+
+  <!-- SCREEN: Onboarding -->
+  <div class="screen active" id="screen-onboarding">
+    <div class="card">
+      <div class="onb-progress" id="onb-progress"></div>
+
+      <div class="onb-step active" id="onb-1">
+        <div class="card-title">Hvem er dere?</div>
+        <div class="card-sub">Skriv inn navnene deres for å komme i gang.</div>
+        <div class="setup-grid">
+          <div class="field-group">
+            <label>Person 1</label>
+            <input type="text" id="name1" placeholder="Navn..." />
+          </div>
+          <div class="field-group">
+            <label>Person 2</label>
+            <input type="text" id="name2" placeholder="Navn..." />
+          </div>
+        </div>
+        <div class="privacy-note">
+          <span style="color:var(--gold);font-size:14px;flex-shrink:0">🔒</span>
+          <span>Alle råsvar er private. Dere ser aldri hverandres svar – kun en felles analyse og hver sin private refleksjon.</span>
+        </div>
+        <button class="btn btn-primary" onclick="onbNext(1)">Neste →</button>
+      </div>
+
+      <div class="onb-step" id="onb-2">
+        <div class="card-title">Oppstartssamtale</div>
+        <div class="card-sub">Hjelper Claude forstå dere. Begge svarer separat – ingen ser den andres svar.</div>
+        <div class="person-label" id="onb-person-label"></div>
+        <div class="field-group">
+          <label>Hva er utfordrende i forholdet akkurat nå?</label>
+          <textarea id="onb-challenge" placeholder="Vær ærlig – dette er privat..." rows="3"></textarea>
+        </div>
+        <div class="field-group">
+          <label>Hva fungerer godt?</label>
+          <textarea id="onb-good" placeholder="Det som faktisk er bra..." rows="2"></textarea>
+        </div>
+        <div class="field-group">
+          <label>Hva håper du dette verktøyet skal hjelpe med?</label>
+          <textarea id="onb-hope" placeholder="Ditt håp..." rows="2"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="onbNext(2)">Neste →</button>
+      </div>
+
+      <div class="onb-step" id="onb-3">
+        <div class="card-title">Kjærlighet og respekt</div>
+        <div class="card-sub">Ranger disse påstandene om deg selv.</div>
+        <div class="person-label" id="onb-person-label-2"></div>
+        <div class="statements-block">
+          <div>
+            <div class="statement-label">«Jeg er flink til å uttrykke hva jeg trenger fra partneren min.»</div>
+            <div class="scale-row" id="onb-scale-1"></div>
+            <div class="scale-labels"><span>Sjelden</span><span>Alltid</span></div>
+          </div>
+          <div class="statement-divider"></div>
+          <div>
+            <div class="statement-label">«Jeg forstår godt hva partneren min trenger for å føle seg elsket/respektert.»</div>
+            <div class="scale-row" id="onb-scale-2"></div>
+            <div class="scale-labels"><span>Sjelden</span><span>Alltid</span></div>
+          </div>
+          <div class="statement-divider"></div>
+          <div>
+            <div class="statement-label">«Når det oppstår konflikter, klarer vi å finne tilbake til hverandre relativt fort.»</div>
+            <div class="scale-row" id="onb-scale-3"></div>
+            <div class="scale-labels"><span>Sjelden</span><span>Alltid</span></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:1.25rem" onclick="onbNext(3)">Fullfør →</button>
+      </div>
+
+      <div class="onb-step" id="onb-4">
+        <div class="waiting-box">
+          <div class="waiting-icon">✦</div>
+          <div class="waiting-title" id="onb-done-title">Takk!</div>
+          <div class="waiting-sub" id="onb-done-sub">Gi telefonen til den andre.</div>
+          <button class="btn btn-gold" onclick="onbStartPerson2()">Neste person →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Choose -->
+  <div class="screen" id="screen-choose">
+    <div class="card">
+      <div class="card-title">Hvem svarer nå?</div>
+      <div class="card-sub">Den andre kan gå ut av rommet. Svarene dine er kun dine.</div>
+      <div class="status-row" id="status-row"></div>
+      <div class="partner-grid">
+        <button class="partner-btn" id="btn-p1" onclick="startQuestions(0)">
+          <div class="partner-icon">✦</div>
+          <span class="partner-name" id="label-p1">Person 1</span>
+          <span class="partner-hint">Svar på spørsmål</span>
+        </button>
+        <button class="partner-btn" id="btn-p2" onclick="startQuestions(1)">
+          <div class="partner-icon">✦</div>
+          <span class="partner-name" id="label-p2">Person 2</span>
+          <span class="partner-hint">Svar på spørsmål</span>
+        </button>
+      </div>
+      <div id="generate-area" style="display:none;margin-top:1rem">
+        <div class="ornament">· · ·</div>
+        <button class="btn btn-gold" onclick="generateAnalysis()">Generer analyse →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Questions -->
+  <div class="screen" id="screen-questions">
+    <div class="card">
+      <div class="q-progress" id="q-progress"></div>
+      <div class="q-meta">
+        <span class="q-counter" id="q-counter">1 / 7</span>
+        <span class="q-badge" id="q-badge"></span>
+      </div>
+      <div class="q-text" id="q-text"></div>
+      <div id="q-input-area"></div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="btn-back" onclick="prevQuestion()">← Tilbake</button>
+        <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()">Neste →</button>
+      </div>
+    </div>
+    <div class="privacy-note">
+      <span style="color:var(--gold);font-size:14px;flex-shrink:0;margin-top:1px">🔒</span>
+      <span id="privacy-msg">Svaret ditt er privat.</span>
+    </div>
+  </div>
+
+  <!-- SCREEN: Done one -->
+  <div class="screen" id="screen-done-one">
+    <div class="card">
+      <div class="waiting-box">
+        <div class="waiting-icon">✦</div>
+        <div class="waiting-title" id="done-one-title">Takk!</div>
+        <div class="waiting-sub" id="done-one-sub">Svarene dine er lagret.</div>
+        <button class="btn btn-ghost btn-sm" onclick="showChoose()">← Tilbake</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Loading -->
+  <div class="screen" id="screen-loading">
+    <div class="card">
+      <div class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loading-text">Leser begge sett med svar...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Analysis -->
+  <div class="screen" id="screen-analysis">
+    <div class="card">
+      <div class="analysis-label">Felles analyse</div>
+      <div class="card-sub" style="margin-bottom:1rem">Les gjerne sammen. Ingen råsvar er avslørt.</div>
+      <div class="analysis-text" id="shared-analysis"></div>
+    </div>
+    <div class="ornament">· · ·</div>
+    <div class="card">
+      <div class="private-box">
+        <div class="analysis-label" id="private-label-1"></div>
+        <div class="analysis-text" id="private-analysis-1"></div>
+      </div>
+      <div class="card-sub" style="margin-top:0.85rem;margin-bottom:0.5rem">Noe som traff? Fortsett privat med Claude.</div>
+      <div class="chat-area">
+        <div class="chat-messages" id="chat-messages-1"></div>
+        <div class="chat-input-row">
+          <textarea id="chat-input-1" placeholder="Skriv her..." rows="1"></textarea>
+          <button class="chat-send" onclick="sendChat(0)">→</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="private-box">
+        <div class="analysis-label" id="private-label-2"></div>
+        <div class="analysis-text" id="private-analysis-2"></div>
+      </div>
+      <div class="card-sub" style="margin-top:0.85rem;margin-bottom:0.5rem">Noe som traff? Fortsett privat med Claude.</div>
+      <div class="chat-area">
+        <div class="chat-messages" id="chat-messages-2"></div>
+        <div class="chat-input-row">
+          <textarea id="chat-input-2" placeholder="Skriv her..." rows="1"></textarea>
+          <button class="chat-send" onclick="sendChat(1)">→</button>
+        </div>
+      </div>
+    </div>
+    <div class="ornament">· · ·</div>
+    <button class="btn btn-ghost" onclick="resetWeek()">Start ny ukerefleksjon</button>
+  </div>
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    type: 'statements', text: 'Denne uken', private: false,
+    statements: [
+      { id: 'q1a', text: '«Jeg følte meg sett av partneren min denne uken.»', labels: ['Lite','Mye'] },
+      { id: 'q1b', text: '«Det var rom for å være ærlig om hvordan jeg hadde det.»', labels: ['Lite','Mye'] },
+      { id: 'q1c', text: '«Vi hadde kvalitetstid som betydde noe for meg.»', labels: ['Lite','Mye'] },
+    ]
+  },
+  {
+    type: 'statements', text: 'Mitt bidrag', private: true,
+    statements: [
+      { id: 'q2a', text: '«Jeg var til stede – ikke bare fysisk, men mentalt.»', labels: ['Sjelden','Mye'] },
+      { id: 'q2b', text: '«Jeg tok initiativ til noe som var viktig for den andre.»', labels: ['Sjelden','Mye'] },
+      { id: 'q2c', text: '«Jeg reagerte på en måte jeg er stolt av når noe var vanskelig.»', labels: ['Sjelden','Mye'] },
+    ]
+  },
+  { type: 'textarea', text: 'Hva var det beste øyeblikket denne uken – og var den andre til stede?', private: false, placeholder: 'Beskriv gjerne hva som skjedde...' },
+  { type: 'textarea', text: 'Tenk på en gang du virkelig følte deg elsket eller forstått av den andre. Når var det, og hva skjedde? Det kan være fra i går eller fra flere år siden.', private: false, placeholder: 'Ta den tiden du trenger...' },
+  { type: 'textarea', text: 'Var det noe denne uken du ønsket den andre hadde lagt merke til eller sagt noe om?', private: false, placeholder: 'Det kan være noe lite eller stort...' },
+  { type: 'textarea', text: 'Hva trengte du fra den andre denne uken som du ikke ba om – og vet du hvorfor du ikke ba om det?', private: true, placeholder: 'Vær ærlig med deg selv...' },
+  { type: 'textarea', text: '«Jeg hadde det lettere denne uken da ___»', private: false, placeholder: 'Fullfør setningen...' }
+];
+
+const SYSTEM = `Du er en refleksjonsassistent for par, forankret i Love & Respect-rammeverket til Emerson Eggerichs og et bibelsk ekteskapsyn.
+
+Kjernen: Kvinnens dypeste behov er å føle seg elsket – trygg, sett, forstått, prioritert. Mannens dypeste behov er å føle seg respektert – anerkjent, at innsatsen hans teller. Den gale sirkelen: hun reagerer på å ikke føle seg elsket på måter som oppleves respektløst for ham – og omvendt. Den gode sirkelen: én velger å bryte mønsteret.
+
+Tone: varm, direkte, ikke-dømmende. Som en klok venn, ikke terapeut. Forankret i kristen tro der det er naturlig. Avslør aldri hvem som sa hva i felles analyse. Vær konkret. Unngå plattityder.`;
+
+let S = {
+  names: ['',''],
+  onb: [
+    {challenge:'',good:'',hope:'',scales:[null,null,null]},
+    {challenge:'',good:'',hope:'',scales:[null,null,null]}
+  ],
+  answers: [[],[]],
+  done: [false,false],
+  curP: 0, curQ: 0,
+  onbP: 0,
+  chatH: [[],[]]
+};
+
+function initOnbProg(steps) {
+  document.getElementById('onb-progress').innerHTML =
+    Array.from({length:steps},(_,i)=>`<div class="onb-dot ${i<(S.onbP===0?0:3)?'done':''}"></div>`).join('');
+}
+
+function renderOnbScales() {
+  [1,2,3].forEach(i => {
+    const row = document.getElementById(`onb-scale-${i}`);
+    if (!row) return;
+    const saved = S.onb[S.onbP].scales[i-1];
+    row.innerHTML = [1,2,3,4,5].map(n =>
+      `<button class="scale-btn ${saved==n?'selected':''}" onclick="selOnbScale(${i},${n})">${n}</button>`
+    ).join('');
+  });
+}
+
+function selOnbScale(idx,val) {
+  S.onb[S.onbP].scales[idx-1] = val;
+  renderOnbScales();
+}
+
+function showOnbStep(n) {
+  document.querySelectorAll('.onb-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(`onb-${n}`).classList.add('active');
+}
+
+function onbNext(step) {
+  if (step===1) {
+    const n1=document.getElementById('name1').value.trim();
+    const n2=document.getElementById('name2').value.trim();
+    if (!n1||!n2) { alert('Skriv inn begge navn.'); return; }
+    S.names=[n1,n2];
+    document.getElementById('label-p1').textContent=n1;
+    document.getElementById('label-p2').textContent=n2;
+    document.getElementById('onb-person-label').textContent=`${S.names[0]} svarer:`;
+    document.getElementById('onb-person-label-2').textContent=`${S.names[0]} svarer:`;
+    renderOnbScales();
+    showOnbStep(2);
+  } else if (step===2) {
+    S.onb[S.onbP].challenge=document.getElementById('onb-challenge').value;
+    S.onb[S.onbP].good=document.getElementById('onb-good').value;
+    S.onb[S.onbP].hope=document.getElementById('onb-hope').value;
+    renderOnbScales();
+    showOnbStep(3);
+  } else if (step===3) {
+    if (S.onbP===0) {
+      document.getElementById('onb-done-title').textContent=`Takk, ${S.names[0]}!`;
+      document.getElementById('onb-done-sub').textContent=`Gi telefonen til ${S.names[1]}.`;
+      showOnbStep(4);
+    } else {
+      S.answers = [Array(QUESTIONS.length).fill(null).map(()=>({})), Array(QUESTIONS.length).fill(null).map(()=>({}))];
+      showChoose();
+    }
+  }
+}
+
+function onbStartPerson2() {
+  S.onbP=1;
+  document.getElementById('onb-challenge').value='';
+  document.getElementById('onb-good').value='';
+  document.getElementById('onb-hope').value='';
+  document.getElementById('onb-person-label').textContent=`${S.names[1]} svarer:`;
+  document.getElementById('onb-person-label-2').textContent=`${S.names[1]} svarer:`;
+  renderOnbScales();
+  showOnbStep(2);
+}
+
+function showChoose() {
+  showScreen('screen-choose');
+  document.getElementById('status-row').innerHTML = S.names.map((n,i)=>
+    `<span class="status-pill ${S.done[i]?'done':''}">${n}: ${S.done[i]?'✓ Ferdig':'Venter'}</span>`
+  ).join('');
+  document.getElementById('generate-area').style.display = (S.done[0]&&S.done[1]) ? 'block' : 'none';
+  [0,1].forEach(i => {
+    const b=document.getElementById(`btn-p${i+1}`);
+    S.done[i] ? b.classList.add('done-btn') : b.classList.remove('done-btn');
+  });
+}
+
+function startQuestions(pi) {
+  if (S.done[pi]) return;
+  S.curP=pi; S.curQ=0;
+  renderQ(); showScreen('screen-questions');
+}
+
+function renderQ() {
+  const q=QUESTIONS[S.curQ], p=S.curP, total=QUESTIONS.length;
+  const saved=S.answers[p][S.curQ]||{};
+
+  document.getElementById('q-progress').innerHTML =
+    Array.from({length:total},(_,i)=>
+      `<div class="q-dot ${i<S.curQ?'done':i===S.curQ?'active':''}"></div>`
+    ).join('');
+  document.getElementById('q-counter').textContent=`${S.curQ+1} / ${total}`;
+
+  const badge=document.getElementById('q-badge');
+  badge.className=`q-badge ${q.private?'badge-private':'badge-shared'}`;
+  badge.textContent=q.private?'🔒 Privat':'◎ Felles analyse';
+  document.getElementById('q-text').textContent=q.text;
+
+  const area=document.getElementById('q-input-area');
+  if (q.type==='statements') {
+    area.innerHTML=`<div class="statements-block">${q.statements.map((s,si)=>`
+      <div>
+        <div class="statement-label">${s.text}</div>
+        <div class="scale-row" id="qs-${si}">${[1,2,3,4,5].map(n=>
+          `<button class="scale-btn ${saved[s.id]==n?'selected':''}" onclick="selQScale('${s.id}',${n},${si})">${n}</button>`
+        ).join('')}</div>
+        <div class="scale-labels"><span>${s.labels[0]}</span><span>${s.labels[1]}</span></div>
+      </div>
+      ${si<q.statements.length-1?'<div class="statement-divider"></div>':''}
+    `).join('')}</div>`;
+  } else {
+    area.innerHTML=`<textarea id="q-answer" placeholder="${q.placeholder}">${saved.text||''}</textarea>`;
+  }
+
+  document.getElementById('privacy-msg').textContent = q.private
+    ? 'Dette svaret er helt privat – deles aldri med den andre.'
+    : 'Råsvaret er privat. Kun anonyme mønstre inngår i felles analyse.';
+  document.getElementById('btn-back').style.visibility = S.curQ===0?'hidden':'visible';
+  document.getElementById('btn-next').textContent = S.curQ===total-1?'Fullfør ✓':'Neste →';
+}
+
+function selQScale(id,val,si) {
+  if (!S.answers[S.curP][S.curQ]) S.answers[S.curP][S.curQ]={};
+  S.answers[S.curP][S.curQ][id]=val;
+  document.querySelectorAll(`#qs-${si} .scale-btn`).forEach(b=>b.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+function saveQ() {
+  const q=QUESTIONS[S.curQ];
+  if (q.type==='textarea') {
+    const el=document.getElementById('q-answer');
+    if (el) { if (!S.answers[S.curP][S.curQ]) S.answers[S.curP][S.curQ]={}; S.answers[S.curP][S.curQ].text=el.value; }
+  }
+}
+
+function nextQuestion() {
+  saveQ();
+  if (S.curQ<QUESTIONS.length-1) { S.curQ++; renderQ(); }
+  else {
+    S.done[S.curP]=true;
+    document.getElementById('done-one-title').textContent=`Takk, ${S.names[S.curP]}!`;
+    const other=S.names[1-S.curP];
+    document.getElementById('done-one-sub').textContent=(S.done[0]&&S.done[1])
+      ? 'Begge ferdige! Gå tilbake og generer analysen.'
+      : `${other} kan nå svare.`;
+    showScreen('screen-done-one');
+  }
+}
+
+function prevQuestion() { saveQ(); if (S.curQ>0) { S.curQ--; renderQ(); } }
+
+function fmtAnswers(pi) {
+  const n=S.names[pi], o=S.onb[pi], w=S.answers[pi];
+  let out=`=== ${n} – Oppstartsprofil ===\nUtfordringer: ${o.challenge}\nHva fungerer: ${o.good}\nHåp: ${o.hope}\nSkårer (1-5): Uttrykker behov: ${o.scales[0]}, Forstår partners behov: ${o.scales[1]}, Finner tilbake etter konflikt: ${o.scales[2]}\n\n=== ${n} – Ukessvar ===\n`;
+  QUESTIONS.forEach((q,i)=>{
+    out+=`\nSpm ${i+1} (${q.private?'PRIVAT':'delt'}): ${q.text}\n`;
+    const a=w[i]||{};
+    if (q.type==='statements') q.statements.forEach(s=>{ out+=`  ${s.text}: ${a[s.id]||'?'}/5\n`; });
+    else out+=`Svar: ${a.text||'(ikke besvart)'}\n`;
+  });
+  return out;
+}
+
+async function generateAnalysis() {
+  showScreen('screen-loading');
+  const msgs=['Leser begge sett med svar...','Ser etter mønstre og gap...','Skriver felles analyse...','Utarbeider personlig refleksjon...'];
+  let li=0; const lel=document.getElementById('loading-text');
+  const iv=setInterval(()=>{ li=(li+1)%msgs.length; lel.textContent=msgs[li]; },2000);
+
+  const [n1,n2]=S.names;
+  const prompt=`Gi tre seksjoner basert på svarene fra ${n1} og ${n2}.
+
+${fmtAnswers(0)}
+
+${fmtAnswers(1)}
+
+[FELLES]
+Felles analyse 180-220 ord. Leses sammen. 2-3 konkrete mønstre/gap. Love & Respect som linse. Avsløre aldri hvem sa hva. Avslutt med ett spørsmål de kan snakke om.
+
+[PRIVAT_1]
+Til ${n1}, 120-150 ord. Direkte og personlig. Bruk oppstartsprofilen. Ett konkret mønster/blindspot. Avslutt med ett spørsmål til ${n1} alene.
+
+[PRIVAT_2]
+Til ${n2}, 120-150 ord. Samme struktur som PRIVAT_1.
+
+Svar kun med [FELLES], [PRIVAT_1], [PRIVAT_2]. Ingen tekst utenfor.`;
+
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    clearInterval(iv);
+    parseAnalysis(data.content?.[0]?.text||'');
+  } catch(e) { clearInterval(iv); alert('Noe gikk galt. Prøv igjen.'); showChoose(); }
+}
+
+function parseAnalysis(text) {
+  const felles=extract(text,'[FELLES]',['[PRIVAT_1]','[PRIVAT_2]']);
+  const p1=extract(text,'[PRIVAT_1]',['[PRIVAT_2]']);
+  const p2=extract(text,'[PRIVAT_2]',[]);
+  document.getElementById('shared-analysis').textContent=felles;
+  document.getElementById('private-label-1').textContent=`Kun til ${S.names[0]}`;
+  document.getElementById('private-label-2').textContent=`Kun til ${S.names[1]}`;
+  document.getElementById('private-analysis-1').textContent=p1;
+  document.getElementById('private-analysis-2').textContent=p2;
+  S.chatH=[[{role:'assistant',content:p1}],[{role:'assistant',content:p2}]];
+  showScreen('screen-analysis');
+}
+
+function extract(text,start,ends) {
+  const s=text.indexOf(start); if (s===-1) return '';
+  let e=text.length;
+  for (const t of ends) { const i=text.indexOf(t,s+start.length); if (i!==-1&&i<e) e=i; }
+  return text.slice(s+start.length,e).trim();
+}
+
+async function sendChat(pi) {
+  const input=document.getElementById(`chat-input-${pi+1}`);
+  const msg=input.value.trim(); if (!msg) return;
+  input.value='';
+  const mel=document.getElementById(`chat-messages-${pi+1}`);
+  mel.innerHTML+=`<div class="chat-msg user">${msg}</div>`;
+  const tid=`t-${pi}-${Date.now()}`;
+  mel.innerHTML+=`<div class="chat-msg ai loading" id="${tid}">Skriver...</div>`;
+  mel.scrollTop=mel.scrollHeight;
+  S.chatH[pi].push({role:'user',content:msg});
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
+        system:SYSTEM+`\n\nDu snakker privat med ${S.names[pi]}. Vær direkte, varm, konkret. Hjelp dem å gå dypere i sin egen refleksjon. Bruk det du vet fra oppstartsprofilen.`,
+        messages:S.chatH[pi]})
+    });
+    const data=await res.json();
+    const reply=data.content?.[0]?.text||'';
+    S.chatH[pi].push({role:'assistant',content:reply});
+    const t=document.getElementById(tid);
+    if (t) { t.className='chat-msg ai'; t.textContent=reply; }
+    mel.scrollTop=mel.scrollHeight;
+  } catch(e) { const t=document.getElementById(tid); if(t) t.textContent='Noe gikk galt.'; }
+}
+
+function resetWeek() {
+  if (!confirm('Start ny ukerefleksjon? Ukessvarene nullstilles.')) return;
+  S.answers=[Array(QUESTIONS.length).fill(null).map(()=>({})),Array(QUESTIONS.length).fill(null).map(()=>({}))];
+  S.done=[false,false]; S.chatH=[[],[]];
+  showChoose();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+initOnbProg(4);
+</script>
+</body>
+</html>
