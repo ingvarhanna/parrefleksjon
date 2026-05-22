@@ -216,11 +216,11 @@
       <div class="card-sub">Del denne koden med partneren din så de kan bli med fra sin telefon.</div>
       <div class="invite-box">
         <div class="invite-code" id="show-invite-code"></div>
-        <div class="invite-hint">Invitasjonskode – oppbevar denne</div>
+        <div class="invite-hint">Invitasjonskode – ta vare på denne</div>
       </div>
       <div class="privacy-note">
         <span style="color:var(--gold);font-size:14px;flex-shrink:0">🔒</span>
-        <span>Alle råsvar lagres privat og deles aldri med den andre. Kun analysen vises felles.</span>
+        <span>Alle råsvar lagres privat. Partneren din kan ikke lese svarene dine – kun den felles analysen vises.</span>
       </div>
       <button class="btn btn-primary" onclick="startOnboarding()">Start oppstartssamtale →</button>
     </div>
@@ -232,11 +232,11 @@
       <div class="onb-progress" id="onb-progress"></div>
       <div class="onb-step active" id="onb-2">
         <div class="card-title">Oppstartssamtale</div>
-        <div class="card-sub">Hjelper Claude forstå dere. Privat – ingen ser den andres svar.</div>
+        <div class="card-sub">Hjelper Claude forstå dere. Partneren din kan ikke lese dette.</div>
         <div class="person-label" id="onb-person-label"></div>
         <div class="field-group">
           <label>Hva er utfordrende i forholdet akkurat nå?</label>
-          <textarea id="onb-challenge" placeholder="Vær ærlig – dette er privat..." rows="3"></textarea>
+          <textarea id="onb-challenge" placeholder="Vær ærlig – partneren din kan ikke lese dette..." rows="3"></textarea>
         </div>
         <div class="field-group">
           <label>Hva fungerer godt?</label>
@@ -248,9 +248,10 @@
         </div>
         <button class="btn btn-primary" onclick="onbNext(2)">Neste →</button>
       </div>
+
       <div class="onb-step" id="onb-3">
         <div class="card-title">Kjærlighet og respekt</div>
-        <div class="card-sub">Ranger disse påstandene om deg selv.</div>
+        <div class="card-sub">Ranger disse påstandene om deg selv. Partneren din kan ikke lese dette.</div>
         <div class="person-label" id="onb-person-label-2"></div>
         <div class="statements-block">
           <div>
@@ -273,12 +274,13 @@
         </div>
         <button class="btn btn-primary" style="margin-top:1.25rem" onclick="onbNext(3)">Fullfør →</button>
       </div>
+
       <div class="onb-step" id="onb-done">
         <div class="waiting-box">
           <div class="waiting-icon">✦</div>
           <div class="waiting-title" id="onb-done-title">Takk!</div>
           <div class="waiting-sub" id="onb-done-sub"></div>
-          <button class="btn btn-gold" onclick="showChoose()">Fortsett →</button>
+          <button class="btn btn-gold" id="onb-done-btn">Fortsett →</button>
         </div>
       </div>
     </div>
@@ -288,7 +290,7 @@
   <div class="screen" id="screen-choose">
     <div class="card">
       <div class="card-title">Hvem svarer nå?</div>
-      <div class="card-sub">Den andre kan gå ut av rommet. Svarene dine er kun dine.</div>
+      <div class="card-sub">Partneren din kan svare fra sin egen telefon med invitasjonskoden.</div>
       <div class="status-row" id="status-row"></div>
       <div class="partner-grid">
         <button class="partner-btn" id="btn-p1" onclick="startQuestions(0)">
@@ -330,7 +332,7 @@
     </div>
     <div class="privacy-note">
       <span style="color:var(--gold);font-size:14px;flex-shrink:0;margin-top:1px">🔒</span>
-      <span id="privacy-msg">Svaret ditt lagres privat.</span>
+      <span id="privacy-msg">Partneren din kan ikke lese dette.</span>
     </div>
   </div>
 
@@ -360,7 +362,7 @@
   <div class="screen" id="screen-analysis">
     <div class="card">
       <div class="analysis-label">Felles analyse</div>
-      <div class="card-sub" style="margin-bottom:1rem">Les gjerne sammen. Ingen råsvar er avslørt.</div>
+      <div class="card-sub" style="margin-bottom:1rem">Les gjerne sammen. Partneren din kan ikke lese råsvarene dine.</div>
       <div class="analysis-text" id="shared-analysis"></div>
     </div>
     <div class="ornament">· · ·</div>
@@ -398,10 +400,9 @@
 </div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://ifovbujkilumetnxwyws.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlmb3ZidWpraWx1bWV0bnh3eXdzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0MjUwNjIsImV4cCI6MjA5NTAwMTA2Mn0.dx8QqIbZ73VY28PphNDI_y46jMA8jV0WvbNey7GJDks';
-const ANTHROPIC_KEY = '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';
+const PROXY_URL = `${SUPABASE_URL}/functions/v1/claude-proxy`;
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
@@ -416,10 +417,10 @@ const QUESTIONS = [
     { id:'q2b', text:'«Jeg tok initiativ til noe som var viktig for den andre.»', labels:['Sjelden','Mye'] },
     { id:'q2c', text:'«Jeg reagerte på en måte jeg er stolt av når noe var vanskelig.»', labels:['Sjelden','Mye'] },
   ]},
-  { type:'textarea', text:'Hva var det beste øyeblikket denne uken – og var den andre til stede?', private:false, placeholder:'Beskriv gjerne hva som skjedde...' },
-  { type:'textarea', text:'Tenk på en gang du virkelig følte deg elsket eller forstått av den andre. Når var det, og hva skjedde? Det kan være fra i går eller fra flere år siden.', private:false, placeholder:'Ta den tiden du trenger...' },
-  { type:'textarea', text:'Var det noe denne uken du ønsket den andre hadde lagt merke til eller sagt noe om?', private:false, placeholder:'Det kan være noe lite eller stort...' },
-  { type:'textarea', text:'Hva trengte du fra den andre denne uken som du ikke ba om – og vet du hvorfor du ikke ba om det?', private:true, placeholder:'Vær ærlig med deg selv...' },
+  { type:'textarea', text:'Hva var det beste øyeblikket denne uken – og var partneren din til stede?', private:false, placeholder:'Beskriv gjerne hva som skjedde...' },
+  { type:'textarea', text:'Tenk på en gang du virkelig følte deg elsket eller forstått av partneren din. Når var det, og hva skjedde? Det kan være fra i går eller fra flere år siden.', private:false, placeholder:'Ta den tiden du trenger...' },
+  { type:'textarea', text:'Var det noe denne uken du ønsket partneren din hadde lagt merke til eller sagt noe om?', private:false, placeholder:'Det kan være noe lite eller stort...' },
+  { type:'textarea', text:'Hva trengte du fra partneren denne uken som du ikke ba om – og vet du hvorfor du ikke ba om det?', private:true, placeholder:'Partneren din kan ikke lese dette...' },
   { type:'textarea', text:'«Jeg hadde det lettere denne uken da ___»', private:false, placeholder:'Fullfør setningen...' }
 ];
 
@@ -429,111 +430,90 @@ Kjernen: Kvinnens dypeste behov er å føle seg elsket – trygg, sett, forståt
 
 Tone: varm, direkte, ikke-dømmende. Som en klok venn, ikke terapeut. Forankret i kristen tro der det er naturlig. Avslør aldri hvem som sa hva i felles analyse. Vær konkret. Unngå plattityder.`;
 
-// ── STATE ────────────────────────────────────────────────────────────────
 let S = {
-  coupleId: null,
-  inviteCode: null,
-  names: ['',''],
-  profiles: [null, null],
-  onbData: [{challenge:'',good:'',hope:'',scales:[null,null,null]},{challenge:'',good:'',hope:'',scales:[null,null,null]}],
-  onbPerson: 0,
-  answers: [Array(QUESTIONS.length).fill(null).map(()=>({})), Array(QUESTIONS.length).fill(null).map(()=>({}))],
-  done: [false, false],
-  sessionIds: [null, null],
-  curP: 0, curQ: 0,
-  chatH: [[],[]]
+  coupleId:null, inviteCode:null, names:['',''],
+  onbData:[{challenge:'',good:'',hope:'',scales:[null,null,null]},{challenge:'',good:'',hope:'',scales:[null,null,null]}],
+  onbPerson:0,
+  answers:[Array(QUESTIONS.length).fill(null).map(()=>({})),Array(QUESTIONS.length).fill(null).map(()=>({}))],
+  done:[false,false], sessionIds:[null,null],
+  curP:0, curQ:0, chatH:[[],[]]
 };
 
-// ── HELPERS ──────────────────────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
 }
 
-function showError(elId, msg) {
-  const el = document.getElementById(elId);
-  if (el) el.innerHTML = `<div class="error-msg">${msg}</div>`;
+function showError(elId,msg) {
+  const el=document.getElementById(elId);
+  if(el) el.innerHTML=`<div class="error-msg">${msg}</div>`;
 }
 
 function getWeekNumber() {
-  const d = new Date();
-  const onejan = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  const d=new Date(), onejan=new Date(d.getFullYear(),0,1);
+  return Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
 }
 
 function generateCode() {
-  const words = ['ROSE','HÅND','FRED','SANG','LYS','HÅP','GAVE','GREN','BØNN','KJÆR'];
-  const word = words[Math.floor(Math.random()*words.length)];
-  const num = Math.floor(10+Math.random()*90);
-  return word + num;
+  const words=['ROSE','HÅND','FRED','SANG','LYS','HÅP','GAVE','GREN','BØNN','KJÆR'];
+  return words[Math.floor(Math.random()*words.length)]+Math.floor(10+Math.random()*90);
 }
 
-// ── COUPLE SETUP ─────────────────────────────────────────────────────────
+async function callClaude(system, messages, max_tokens=1200) {
+  const res = await fetch(PROXY_URL, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_ANON}`},
+    body:JSON.stringify({system, messages, max_tokens})
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.content?.[0]?.text || '';
+}
+
 async function createCouple() {
-  const n1 = document.getElementById('name1').value.trim();
-  const n2 = document.getElementById('name2').value.trim();
-  if (!n1||!n2) { showError('new-couple-error','Skriv inn begge navn.'); return; }
-
-  const code = generateCode();
-  const { data, error } = await sb.from('couples').insert({
-    invite_code: code,
-    person1_name: n1,
-    person2_name: n2
-  }).select().single();
-
-  if (error) { showError('new-couple-error','Noe gikk galt. Prøv igjen.'); return; }
-
-  S.coupleId = data.id;
-  S.inviteCode = code;
-  S.names = [n1, n2];
-  document.getElementById('label-p1').textContent = n1;
-  document.getElementById('label-p2').textContent = n2;
-  document.getElementById('show-invite-code').textContent = code;
+  const n1=document.getElementById('name1').value.trim();
+  const n2=document.getElementById('name2').value.trim();
+  if(!n1||!n2){showError('new-couple-error','Skriv inn begge navn.');return;}
+  const code=generateCode();
+  const {data,error}=await sb.from('couples').insert({invite_code:code,person1_name:n1,person2_name:n2}).select().single();
+  if(error){showError('new-couple-error','Noe gikk galt. Prøv igjen.');return;}
+  S.coupleId=data.id; S.inviteCode=code; S.names=[n1,n2];
+  document.getElementById('label-p1').textContent=n1;
+  document.getElementById('label-p2').textContent=n2;
+  document.getElementById('show-invite-code').textContent=code;
   showScreen('screen-invite');
 }
 
 async function joinCouple() {
-  const code = document.getElementById('invite-input').value.trim().toUpperCase();
-  if (!code) { showError('join-error','Skriv inn invitasjonskoden.'); return; }
-
-  const { data, error } = await sb.from('couples').select().eq('invite_code', code).single();
-  if (error||!data) { showError('join-error','Fant ikke dette paret. Sjekk koden og prøv igjen.'); return; }
-
-  S.coupleId = data.id;
-  S.inviteCode = code;
-  S.names = [data.person1_name, data.person2_name];
-  document.getElementById('label-p1').textContent = S.names[0];
-  document.getElementById('label-p2').textContent = S.names[1];
-
-  // Sjekk om profiler finnes
-  const { data: profs } = await sb.from('profiles').select().eq('couple_id', S.coupleId);
-  if (profs && profs.length > 0) {
-    S.profiles = profs;
-    showChoose();
-  } else {
-    startOnboarding();
-  }
+  const code=document.getElementById('invite-input').value.trim().toUpperCase();
+  if(!code){showError('join-error','Skriv inn invitasjonskoden.');return;}
+  const {data,error}=await sb.from('couples').select().eq('invite_code',code).single();
+  if(error||!data){showError('join-error','Fant ikke dette paret. Sjekk koden og prøv igjen.');return;}
+  S.coupleId=data.id; S.inviteCode=code; S.names=[data.person1_name,data.person2_name];
+  document.getElementById('label-p1').textContent=S.names[0];
+  document.getElementById('label-p2').textContent=S.names[1];
+  const {data:profs}=await sb.from('profiles').select().eq('couple_id',S.coupleId);
+  if(profs&&profs.length>=2){showChoose();}
+  else{startOnboarding();}
 }
 
-// ── ONBOARDING ────────────────────────────────────────────────────────────
 function startOnboarding() {
-  S.onbPerson = 0;
-  renderOnbPerson();
-  showOnbStep('onb-2');
-  showScreen('screen-onboarding');
+  S.onbPerson=0; renderOnbPerson(); renderOnbProgress(0);
+  showOnbStep('onb-2'); showScreen('screen-onboarding');
 }
 
 function renderOnbPerson() {
-  const name = S.names[S.onbPerson];
-  document.getElementById('onb-person-label').textContent = `${name} svarer:`;
-  document.getElementById('onb-person-label-2').textContent = `${name} svarer:`;
+  const name=S.names[S.onbPerson];
+  document.getElementById('onb-person-label').textContent=`${name} svarer:`;
+  document.getElementById('onb-person-label-2').textContent=`${name} svarer:`;
   renderOnbScales();
 }
 
 function renderOnbProgress(step) {
-  const el = document.getElementById('onb-progress');
-  el.innerHTML = [0,1,2].map(i=>`<div class="onb-dot ${i<step?'done':''}"></div>`).join('');
+  document.getElementById('onb-progress').innerHTML=
+    [0,1,2].map(i=>`<div class="onb-dot ${i<step?'done':''}"></div>`).join('');
 }
 
 function showOnbStep(id) {
@@ -552,141 +532,93 @@ function renderOnbScales() {
   });
 }
 
-function selOnbScale(idx,val) {
-  S.onbData[S.onbPerson].scales[idx-1]=val;
-  renderOnbScales();
-}
+function selOnbScale(idx,val){S.onbData[S.onbPerson].scales[idx-1]=val;renderOnbScales();}
 
 async function onbNext(step) {
-  if (step===2) {
-    S.onbData[S.onbPerson].challenge = document.getElementById('onb-challenge').value;
-    S.onbData[S.onbPerson].good = document.getElementById('onb-good').value;
-    S.onbData[S.onbPerson].hope = document.getElementById('onb-hope').value;
-    renderOnbScales();
-    renderOnbProgress(1);
-    showOnbStep('onb-3');
-  } else if (step===3) {
-    // Lagre i Supabase
-    const d = S.onbData[S.onbPerson];
-    await sb.from('profiles').insert({
-      couple_id: S.coupleId,
-      person_index: S.onbPerson,
-      challenge: d.challenge,
-      good: d.good,
-      hope: d.hope,
-      scales: d.scales
-    });
-
-    if (S.onbPerson===0) {
-      document.getElementById('onb-done-title').textContent = `Takk, ${S.names[0]}!`;
-      document.getElementById('onb-done-sub').textContent = `Gi telefonen til ${S.names[1]} så de kan svare.`;
-      renderOnbProgress(2);
-      showOnbStep('onb-done');
+  if(step===2){
+    S.onbData[S.onbPerson].challenge=document.getElementById('onb-challenge').value;
+    S.onbData[S.onbPerson].good=document.getElementById('onb-good').value;
+    S.onbData[S.onbPerson].hope=document.getElementById('onb-hope').value;
+    renderOnbScales(); renderOnbProgress(1); showOnbStep('onb-3');
+  } else if(step===3){
+    const d=S.onbData[S.onbPerson];
+    await sb.from('profiles').insert({couple_id:S.coupleId,person_index:S.onbPerson,challenge:d.challenge,good:d.good,hope:d.hope,scales:d.scales});
+    if(S.onbPerson===0){
+      document.getElementById('onb-done-title').textContent=`Takk, ${S.names[0]}!`;
+      document.getElementById('onb-done-sub').textContent=`${S.names[1]} kan nå svare fra sin telefon med invitasjonskoden, eller her.`;
+      document.getElementById('onb-done-btn').onclick=()=>{
+        S.onbPerson=1;
+        document.getElementById('onb-challenge').value='';
+        document.getElementById('onb-good').value='';
+        document.getElementById('onb-hope').value='';
+        renderOnbPerson(); renderOnbProgress(2); showOnbStep('onb-2');
+      };
+      renderOnbProgress(2); showOnbStep('onb-done');
     } else {
       showChoose();
     }
   }
 }
 
-document.getElementById('onb-done').querySelector('button').onclick = () => {
-  S.onbPerson = 1;
-  document.getElementById('onb-challenge').value = '';
-  document.getElementById('onb-good').value = '';
-  document.getElementById('onb-hope').value = '';
-  renderOnbPerson();
-  renderOnbProgress(2);
-  showOnbStep('onb-2');
-};
-
-// ── WEEKLY FLOW ───────────────────────────────────────────────────────────
 async function showChoose() {
   showScreen('screen-choose');
-  document.getElementById('label-p1').textContent = S.names[0];
-  document.getElementById('label-p2').textContent = S.names[1];
-
-  // Sjekk om noen allerede har svart denne uken
-  const week = getWeekNumber();
-  const year = new Date().getFullYear();
-  const { data: sessions } = await sb.from('sessions')
-    .select().eq('couple_id', S.coupleId)
-    .eq('week_number', week).eq('year', year);
-
-  S.done = [false, false];
-  if (sessions) {
-    sessions.forEach(s => {
-      S.done[s.person_index] = true;
-      S.sessionIds[s.person_index] = s.id;
-    });
-  }
-
-  document.getElementById('status-row').innerHTML = S.names.map((n,i)=>
+  document.getElementById('label-p1').textContent=S.names[0];
+  document.getElementById('label-p2').textContent=S.names[1];
+  const week=getWeekNumber(), year=new Date().getFullYear();
+  const {data:sessions}=await sb.from('sessions').select().eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year);
+  S.done=[false,false];
+  if(sessions) sessions.forEach(s=>{S.done[s.person_index]=true;S.sessionIds[s.person_index]=s.id;});
+  document.getElementById('status-row').innerHTML=S.names.map((n,i)=>
     `<span class="status-pill ${S.done[i]?'done':''}">${n}: ${S.done[i]?'✓ Ferdig':'Venter'}</span>`
   ).join('');
-
-  document.getElementById('generate-area').style.display = (S.done[0]&&S.done[1]) ? 'block' : 'none';
+  document.getElementById('generate-area').style.display=(S.done[0]&&S.done[1])?'block':'none';
   [0,1].forEach(i=>{
     const b=document.getElementById(`btn-p${i+1}`);
     S.done[i]?b.classList.add('done-btn'):b.classList.remove('done-btn');
   });
-
-  // Last historikk
   loadHistory();
 }
 
 async function loadHistory() {
-  const { data } = await sb.from('analyses')
-    .select().eq('couple_id', S.coupleId)
-    .order('created_at', {ascending:false}).limit(5);
-
-  const card = document.getElementById('history-card');
-  const list = document.getElementById('history-list');
-
-  if (data && data.length > 0) {
-    card.style.display = 'block';
-    list.innerHTML = data.map(a=>{
-      const date = new Date(a.created_at).toLocaleDateString('no-NO',{day:'numeric',month:'long'});
+  const {data}=await sb.from('analyses').select().eq('couple_id',S.coupleId).order('created_at',{ascending:false}).limit(5);
+  const card=document.getElementById('history-card');
+  const list=document.getElementById('history-list');
+  if(data&&data.length>0){
+    card.style.display='block';
+    list.innerHTML=data.map(a=>{
+      const date=new Date(a.created_at).toLocaleDateString('no-NO',{day:'numeric',month:'long'});
       return `<div class="history-item" onclick="showHistoricAnalysis('${a.id}')">
         <span class="history-date">${date}</span>
         <span class="history-week">Uke ${a.week_number}</span>
       </div>`;
     }).join('');
-  } else {
-    card.style.display = 'none';
-  }
+  } else {card.style.display='none';}
 }
 
 async function showHistoricAnalysis(id) {
-  const { data } = await sb.from('analyses').select().eq('id', id).single();
-  if (!data) return;
-  displayAnalysis(data.shared_analysis, data.private_analysis_1, data.private_analysis_2);
+  const {data}=await sb.from('analyses').select().eq('id',id).single();
+  if(data) displayAnalysis(data.shared_analysis,data.private_analysis_1,data.private_analysis_2);
 }
 
 function startQuestions(pi) {
-  if (S.done[pi]) return;
-  S.curP = pi;
-  S.curQ = 0;
-  S.answers[pi] = Array(QUESTIONS.length).fill(null).map(()=>({}));
-  renderQ();
-  showScreen('screen-questions');
+  if(S.done[pi])return;
+  S.curP=pi; S.curQ=0;
+  S.answers[pi]=Array(QUESTIONS.length).fill(null).map(()=>({}));
+  renderQ(); showScreen('screen-questions');
 }
 
 function renderQ() {
-  const q=QUESTIONS[S.curQ], p=S.curP, total=QUESTIONS.length;
+  const q=QUESTIONS[S.curQ],p=S.curP,total=QUESTIONS.length;
   const saved=S.answers[p][S.curQ]||{};
-
-  document.getElementById('q-progress').innerHTML =
-    Array.from({length:total},(_,i)=>
-      `<div class="q-dot ${i<S.curQ?'done':i===S.curQ?'active':''}"></div>`
-    ).join('');
+  document.getElementById('q-progress').innerHTML=Array.from({length:total},(_,i)=>
+    `<div class="q-dot ${i<S.curQ?'done':i===S.curQ?'active':''}"></div>`).join('');
   document.getElementById('q-counter').textContent=`${S.curQ+1} / ${total}`;
-
   const badge=document.getElementById('q-badge');
   badge.className=`q-badge ${q.private?'badge-private':'badge-shared'}`;
   badge.textContent=q.private?'🔒 Privat':'◎ Felles analyse';
   document.getElementById('q-text').textContent=q.text;
-
   const area=document.getElementById('q-input-area');
-  if (q.type==='statements') {
+  if(q.type==='statements'){
     area.innerHTML=`<div class="statements-block">${q.statements.map((s,si)=>`
       <div>
         <div class="statement-label">${s.text}</div>
@@ -700,116 +632,80 @@ function renderQ() {
   } else {
     area.innerHTML=`<textarea id="q-answer" placeholder="${q.placeholder}">${saved.text||''}</textarea>`;
   }
-
-  document.getElementById('privacy-msg').textContent = q.private
-    ? 'Dette svaret lagres privat – deles aldri med den andre.'
-    : 'Råsvaret lagres privat. Kun anonyme mønstre inngår i felles analyse.';
-  document.getElementById('btn-back').style.visibility = S.curQ===0?'hidden':'visible';
-  document.getElementById('btn-next').textContent = S.curQ===total-1?'Fullfør ✓':'Neste →';
+  document.getElementById('privacy-msg').textContent=q.private
+    ?'Partneren din kan ikke lese dette – det er kun til din private refleksjon.'
+    :'Partneren din kan ikke lese råsvaret ditt. Kun anonyme mønstre inngår i felles analyse.';
+  document.getElementById('btn-back').style.visibility=S.curQ===0?'hidden':'visible';
+  document.getElementById('btn-next').textContent=S.curQ===total-1?'Fullfør ✓':'Neste →';
 }
 
-function selQScale(id,val,si) {
-  if(!S.answers[S.curP][S.curQ]) S.answers[S.curP][S.curQ]={};
+function selQScale(id,val,si){
+  if(!S.answers[S.curP][S.curQ])S.answers[S.curP][S.curQ]={};
   S.answers[S.curP][S.curQ][id]=val;
   document.querySelectorAll(`#qs-${si} .scale-btn`).forEach(b=>b.classList.remove('selected'));
   event.target.classList.add('selected');
 }
 
-function saveQ() {
+function saveQ(){
   const q=QUESTIONS[S.curQ];
-  if (q.type==='textarea') {
+  if(q.type==='textarea'){
     const el=document.getElementById('q-answer');
     if(el){if(!S.answers[S.curP][S.curQ])S.answers[S.curP][S.curQ]={};S.answers[S.curP][S.curQ].text=el.value;}
   }
 }
 
-async function nextQuestion() {
+async function nextQuestion(){
   saveQ();
-  if (S.curQ<QUESTIONS.length-1) { S.curQ++; renderQ(); }
-  else {
-    // Lagre i Supabase
-    const week = getWeekNumber();
-    const year = new Date().getFullYear();
-    const { data } = await sb.from('sessions').insert({
-      couple_id: S.coupleId,
-      person_index: S.curP,
-      week_number: week,
-      year: year,
-      answers: S.answers[S.curP]
-    }).select().single();
-
-    if (data) S.sessionIds[S.curP] = data.id;
-    S.done[S.curP] = true;
-
+  if(S.curQ<QUESTIONS.length-1){S.curQ++;renderQ();}
+  else{
+    const week=getWeekNumber(),year=new Date().getFullYear();
+    const {data}=await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.curP,week_number:week,year,answers:S.answers[S.curP]}).select().single();
+    if(data)S.sessionIds[S.curP]=data.id;
+    S.done[S.curP]=true;
     document.getElementById('done-one-title').textContent=`Takk, ${S.names[S.curP]}!`;
     const other=S.names[1-S.curP];
     document.getElementById('done-one-sub').textContent=(S.done[0]&&S.done[1])
-      ? 'Begge ferdige! Gå tilbake og generer analysen.'
-      : `${other} kan nå svare fra sin telefon eller her.`;
+      ?'Begge ferdige! Gå tilbake og generer analysen.'
+      :`${other} kan svare fra sin telefon med invitasjonskoden.`;
     showScreen('screen-done-one');
   }
 }
 
-function prevQuestion() { saveQ(); if(S.curQ>0){S.curQ--;renderQ();} }
+function prevQuestion(){saveQ();if(S.curQ>0){S.curQ--;renderQ();}}
 
-// ── ANALYSIS ──────────────────────────────────────────────────────────────
-async function generateAnalysis() {
+async function generateAnalysis(){
   showScreen('screen-loading');
   const msgs=['Leser begge sett med svar...','Ser etter mønstre og gap...','Skriver felles analyse...','Utarbeider personlig refleksjon...'];
-  let li=0; const lel=document.getElementById('loading-text');
+  let li=0;const lel=document.getElementById('loading-text');
   const iv=setInterval(()=>{li=(li+1)%msgs.length;lel.textContent=msgs[li];},2000);
 
-  // Hent profiler fra Supabase
-  const { data: profs } = await sb.from('profiles').select().eq('couple_id', S.coupleId);
-  const p0 = profs?.find(p=>p.person_index===0)||{};
-  const p1 = profs?.find(p=>p.person_index===1)||{};
+  try {
+    const {data:profs}=await sb.from('profiles').select().eq('couple_id',S.coupleId);
+    const p0=profs?.find(p=>p.person_index===0)||{};
+    const p1=profs?.find(p=>p.person_index===1)||{};
+    const week=getWeekNumber(),year=new Date().getFullYear();
+    const {data:sessions}=await sb.from('sessions').select().eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year);
+    const s0=sessions?.find(s=>s.person_index===0)?.answers||{};
+    const s1=sessions?.find(s=>s.person_index===1)?.answers||{};
+    const {data:history}=await sb.from('analyses').select().eq('couple_id',S.coupleId).order('created_at',{ascending:false}).limit(4);
+    const histCtx=history&&history.length>0?`\n\n=== Tidligere analyser ===\n${history.map(a=>`Uke ${a.week_number}: ${a.shared_analysis.substring(0,200)}...`).join('\n')}`:'';
 
-  // Hent ukessvar fra Supabase
-  const week = getWeekNumber();
-  const year = new Date().getFullYear();
-  const { data: sessions } = await sb.from('sessions')
-    .select().eq('couple_id', S.coupleId)
-    .eq('week_number', week).eq('year', year);
+    function fmtP(name,prof,ans){
+      let o=`=== ${name} – Profil ===\nUtfordringer: ${prof.challenge||'ikke oppgitt'}\nHva fungerer: ${prof.good||'ikke oppgitt'}\nHåp: ${prof.hope||'ikke oppgitt'}\nSkårer: Uttrykker behov: ${(prof.scales||[])[0]||'?'}/5, Forstår partners behov: ${(prof.scales||[])[1]||'?'}/5, Finner tilbake: ${(prof.scales||[])[2]||'?'}/5\n\n=== ${name} – Ukessvar ===\n`;
+      QUESTIONS.forEach((q,i)=>{
+        o+=`\nSpm ${i+1} (${q.private?'PRIVAT':'delt'}): ${q.text}\n`;
+        const a=ans[i]||{};
+        if(q.type==='statements')q.statements.forEach(s=>{o+=`  ${s.text}: ${a[s.id]||'?'}/5\n`;});
+        else o+=`Svar: ${a.text||'(ikke besvart)'}\n`;
+      });
+      return o;
+    }
 
-  const s0 = sessions?.find(s=>s.person_index===0)?.answers||{};
-  const s1 = sessions?.find(s=>s.person_index===1)?.answers||{};
-
-  // Hent historikk (siste 4 analyser)
-  const { data: history } = await sb.from('analyses')
-    .select().eq('couple_id', S.coupleId)
-    .order('created_at',{ascending:false}).limit(4);
-
-  const historyContext = history && history.length > 0
-    ? `\n\n=== Tidligere analyser (bruk til å se utvikling) ===\n${history.map((a,i)=>
-        `Uke ${a.week_number}: ${a.shared_analysis.substring(0,200)}...`
-      ).join('\n')}`
-    : '';
-
-  const [n0, n1] = S.names;
-
-  function fmtProfile(name, prof, answers) {
-    let out = `=== ${name} – Profil ===\n`;
-    out += `Utfordringer: ${prof.challenge||'ikke oppgitt'}\n`;
-    out += `Hva fungerer: ${prof.good||'ikke oppgitt'}\n`;
-    out += `Håp: ${prof.hope||'ikke oppgitt'}\n`;
-    const sc = prof.scales||[];
-    out += `Skårer: Uttrykker behov: ${sc[0]||'?'}/5, Forstår partners behov: ${sc[1]||'?'}/5, Finner tilbake etter konflikt: ${sc[2]||'?'}/5\n\n`;
-    out += `=== ${name} – Ukessvar ===\n`;
-    QUESTIONS.forEach((q,i)=>{
-      out+=`\nSpm ${i+1} (${q.private?'PRIVAT':'delt'}): ${q.text}\n`;
-      const a=answers[i]||{};
-      if(q.type==='statements') q.statements.forEach(s=>{out+=`  ${s.text}: ${a[s.id]||'?'}/5\n`;});
-      else out+=`Svar: ${a.text||'(ikke besvart)'}\n`;
-    });
-    return out;
-  }
-
-  const prompt = `${fmtProfile(n0, p0, s0)}\n\n${fmtProfile(n1, p1, s1)}${historyContext}
-
-Gi tre seksjoner:
+    const [n0,n1]=S.names;
+    const prompt=`${fmtP(n0,p0,s0)}\n\n${fmtP(n1,p1,s1)}${histCtx}
 
 [FELLES]
-Felles analyse 180-220 ord. Leses sammen. 2-3 konkrete mønstre/gap. Bruk Love & Respect som linse. Avsløre aldri hvem sa hva.${history&&history.length>0?' Nevn gjerne om du ser utvikling fra tidligere uker.':''} Avslutt med ett spørsmål de kan snakke om.
+Felles analyse 180-220 ord. Leses sammen. 2-3 konkrete mønstre/gap. Love & Respect som linse. Avslør aldri hvem sa hva.${history&&history.length>0?' Nevn gjerne utvikling fra tidligere uker.':''} Avslutt med ett spørsmål de kan snakke om.
 
 [PRIVAT_1]
 Til ${n0}, 120-150 ord. Direkte og personlig. Ett konkret mønster/blindspot. Avslutt med ett spørsmål til ${n0} alene.
@@ -819,57 +715,42 @@ Til ${n1}, 120-150 ord. Samme struktur.
 
 Kun [FELLES], [PRIVAT_1], [PRIVAT_2]. Ingen tekst utenfor.`;
 
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,system:SYSTEM,messages:[{role:'user',content:prompt}]})
-    });
-    const data = await res.json();
+    const text=await callClaude(SYSTEM,[{role:'user',content:prompt}],1200);
+    const felles=extract(text,'[FELLES]',['[PRIVAT_1]','[PRIVAT_2]']);
+    const priv1=extract(text,'[PRIVAT_1]',['[PRIVAT_2]']);
+    const priv2=extract(text,'[PRIVAT_2]',[]);
+
+    await sb.from('analyses').insert({couple_id:S.coupleId,week_number:week,year,shared_analysis:felles,private_analysis_1:priv1,private_analysis_2:priv2});
     clearInterval(iv);
-
-    const text = data.content?.[0]?.text||'';
-    const felles = extract(text,'[FELLES]',['[PRIVAT_1]','[PRIVAT_2]']);
-    const priv1 = extract(text,'[PRIVAT_1]',['[PRIVAT_2]']);
-    const priv2 = extract(text,'[PRIVAT_2]',[]);
-
-    // Lagre analyse i Supabase
-    await sb.from('analyses').insert({
-      couple_id: S.coupleId,
-      week_number: week,
-      year: year,
-      shared_analysis: felles,
-      private_analysis_1: priv1,
-      private_analysis_2: priv2
-    });
-
-    displayAnalysis(felles, priv1, priv2);
-  } catch(e) {
+    displayAnalysis(felles,priv1,priv2);
+  } catch(e){
     clearInterval(iv);
-    alert('Noe gikk galt. Prøv igjen.');
+    console.error(e);
+    alert(`Noe gikk galt: ${e.message}. Prøv igjen.`);
     showChoose();
   }
 }
 
-function displayAnalysis(felles, priv1, priv2) {
-  document.getElementById('shared-analysis').textContent = felles;
-  document.getElementById('private-label-1').textContent = `Kun til ${S.names[0]}`;
-  document.getElementById('private-label-2').textContent = `Kun til ${S.names[1]}`;
-  document.getElementById('private-analysis-1').textContent = priv1;
-  document.getElementById('private-analysis-2').textContent = priv2;
-  S.chatH = [[{role:'assistant',content:priv1}],[{role:'assistant',content:priv2}]];
+function displayAnalysis(felles,priv1,priv2){
+  document.getElementById('shared-analysis').textContent=felles;
+  document.getElementById('private-label-1').textContent=`Kun til ${S.names[0]}`;
+  document.getElementById('private-label-2').textContent=`Kun til ${S.names[1]}`;
+  document.getElementById('private-analysis-1').textContent=priv1;
+  document.getElementById('private-analysis-2').textContent=priv2;
+  S.chatH=[[{role:'assistant',content:priv1}],[{role:'assistant',content:priv2}]];
   showScreen('screen-analysis');
 }
 
-function extract(text,start,ends) {
-  const s=text.indexOf(start); if(s===-1)return'';
+function extract(text,start,ends){
+  const s=text.indexOf(start);if(s===-1)return'';
   let e=text.length;
   for(const t of ends){const i=text.indexOf(t,s+start.length);if(i!==-1&&i<e)e=i;}
   return text.slice(s+start.length,e).trim();
 }
 
-async function sendChat(pi) {
+async function sendChat(pi){
   const input=document.getElementById(`chat-input-${pi+1}`);
-  const msg=input.value.trim(); if(!msg)return;
+  const msg=input.value.trim();if(!msg)return;
   input.value='';
   const mel=document.getElementById(`chat-messages-${pi+1}`);
   mel.innerHTML+=`<div class="chat-msg user">${msg}</div>`;
@@ -877,20 +758,16 @@ async function sendChat(pi) {
   mel.innerHTML+=`<div class="chat-msg ai loading" id="${tid}">Skriver...</div>`;
   mel.scrollTop=mel.scrollHeight;
   S.chatH[pi].push({role:'user',content:msg});
-  try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_KEY,'anthropic-version':'2023-06-01'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,
-        system:SYSTEM+`\n\nDu snakker privat med ${S.names[pi]}. Vær direkte, varm, konkret. Hjelp dem å gå dypere i sin egen refleksjon.`,
-        messages:S.chatH[pi]})
-    });
-    const data=await res.json();
-    const reply=data.content?.[0]?.text||'';
+  try{
+    const reply=await callClaude(
+      SYSTEM+`\n\nDu snakker privat med ${S.names[pi]}. Vær direkte, varm, konkret. Hjelp dem å gå dypere i sin egen refleksjon.`,
+      S.chatH[pi],800
+    );
     S.chatH[pi].push({role:'assistant',content:reply});
     const t=document.getElementById(tid);
     if(t){t.className='chat-msg ai';t.textContent=reply;}
     mel.scrollTop=mel.scrollHeight;
-  } catch(e){const t=document.getElementById(tid);if(t)t.textContent='Noe gikk galt.';}
+  }catch(e){const t=document.getElementById(tid);if(t)t.textContent='Noe gikk galt.';}
 }
 </script>
 </body>
