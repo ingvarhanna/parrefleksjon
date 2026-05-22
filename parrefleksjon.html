@@ -165,7 +165,8 @@
       <div class="card-title">Kom i gang</div>
       <div class="card-sub">Opprett et nytt par, eller bli med i et eksisterende med invitasjonskode.</div>
       <button class="btn btn-primary" onclick="showScreen('screen-new-couple')" style="margin-bottom:10px">Opprett nytt par</button>
-      <button class="btn btn-ghost" onclick="showScreen('screen-join')">Jeg har en invitasjonskode</button>
+      <button class="btn btn-ghost" onclick="showScreen('screen-join')" style="margin-bottom:10px">Jeg har en invitasjonskode</button>
+      <button class="btn btn-ghost" onclick="testModus()" style="font-size:12px;color:var(--ink-muted);border-color:var(--border)">🧪 Testmodus – hopp til analyse</button>
     </div>
   </div>
 
@@ -438,6 +439,39 @@ let S = {
   done:[false,false], sessionIds:[null,null],
   curP:0, curQ:0, chatH:[[],[]]
 };
+
+async function testModus() {
+  // Fyller inn testdata og hopper rett til analyse
+  S.names = ['Ingvar', 'Hanna'];
+  S.coupleId = null;
+  document.getElementById('label-p1').textContent = 'Ingvar';
+  document.getElementById('label-p2').textContent = 'Hanna';
+
+  // Lag et midlertidig par i Supabase
+  const code = 'TEST' + Math.floor(10+Math.random()*90);
+  const {data} = await sb.from('couples').insert({invite_code:code, person1_name:'Ingvar', person2_name:'Hanna'}).select().single();
+  if (data) S.coupleId = data.id;
+
+  // Fyll inn dummy svar
+  const dummyAnswers = Array(QUESTIONS.length).fill(null).map((_, i) => {
+    const q = QUESTIONS[i];
+    if (q.type === 'statements') {
+      const obj = {};
+      q.statements.forEach(s => { obj[s.id] = 3; });
+      return obj;
+    }
+    return { text: 'Testdata – hopper over dette spørsmålet.' };
+  });
+
+  // Lagre sessions for begge
+  const week = getWeekNumber(), year = new Date().getFullYear();
+  await sb.from('sessions').insert({couple_id:S.coupleId, person_index:0, week_number:week, year, answers:dummyAnswers});
+  await sb.from('sessions').insert({couple_id:S.coupleId, person_index:1, week_number:week, year, answers:dummyAnswers});
+  S.done = [true, true];
+
+  // Hopp rett til analyse
+  generateAnalysis();
+}
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
