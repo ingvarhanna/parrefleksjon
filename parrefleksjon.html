@@ -360,7 +360,7 @@
   <div class="screen" id="screen-analysis">
     <div class="card">
       <div class="analysis-label" data-t="shared_analysis_label">Felles analyse</div>
-      <div class="card-sub" style="margin-bottom:1rem" data-t="shared_analysis_sub">Les gjerne sammen. Ingen råsvar er avslørt.</div>
+      <div class="card-sub" style="margin-bottom:1rem" data-t="shared_analysis_sub">Les gjerne sammen. Ingen svar er avslørt.</div>
       <div class="analysis-text" id="shared-analysis"></div>
     </div>
     <div class="ornament">· · ·</div>
@@ -482,14 +482,14 @@ const T = {
     btn_generate: 'Generer ukens analyse →',
     history_label: 'Tidligere analyser',
     shared_analysis_label: 'Felles analyse',
-    shared_analysis_sub: 'Les gjerne sammen. Ingen råsvar er avslørt.',
+    shared_analysis_sub: 'Les gjerne sammen. Ingen svar er avslørt.',
     chat_sub: 'Noe som traff? Fortsett privat med Claude.',
     chat_placeholder: 'Skriv her...',
     btn_back_overview: '← Tilbake til oversikt',
     badge_private: '🔒 Kun til deg',
     badge_shared: '◎ Felles analyse',
     privacy_private: (spouse) => `${spouse} kan ikke lese dette – det er kun til din private refleksjon.`,
-    privacy_shared: (spouse) => `${spouse} kan ikke lese råsvaret ditt. Kun anonyme mønstre inngår i felles analyse.`,
+    privacy_shared: (spouse) => `${spouse} kan ikke lese svaret ditt. Kun anonyme mønstre inngår i felles analyse.`,
     welcome: (name) => `Hei, ${name}`,
     done_title: (name) => `Takk, ${name}!`,
     done_sub_waiting: (spouse) => `${spouse} kan svare fra sin telefon med invitasjonskoden.`,
@@ -754,8 +754,7 @@ async function joinCouple(){
   if(error||!data){showError('join-error',lang==='no'?'Fant ikke dette paret. Sjekk koden.':'Couple not found. Check the code.');return;}
   S.coupleId=data.id;S.inviteCode=code;S.names=[data.person1_name,data.person2_name];S.myIndex=1;
   saveLocal();
-  const {data:prof}=await sb.from('profiles').select().eq('couple_id',S.coupleId).eq('person_index',1).single();
-  prof?showChoose():startOnboarding();
+  showChoose();
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────────────────
