@@ -811,6 +811,9 @@ async function onbNext(step){
 
 // ── HOME ──────────────────────────────────────────────────────────────────
 async function showChoose(){
+  // Obligatorisk profil-sjekk
+  const {data:myProf}=await sb.from('profiles').select('id').eq('couple_id',S.coupleId).eq('person_index',S.myIndex).single();
+  if(!myProf){startOnboarding();return;}
   showScreen('screen-choose');
   document.getElementById('welcome-name').innerHTML=`<em>${myName()}</em>`;
 
