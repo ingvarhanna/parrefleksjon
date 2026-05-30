@@ -169,7 +169,7 @@
       <button class="btn btn-ghost" onclick="showScreen('screen-join')" data-t="btn_have_code">Jeg har en invitasjonskode</button>
     </div>
     <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link">Admin</div>
-<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v9</div>
+<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v10</div>
   </div>
 
   <!-- SCREEN: New couple -->
@@ -421,6 +421,16 @@
       <div class="analysis-label">Versjonshistorikk</div>
       <div id="admin-history-list"></div>
     </div>
+    <div class="card">
+      <div class="analysis-label">Nullstill ukesvar</div>
+      <div class="card-sub" style="margin-bottom:1rem">Slett svarene for et par denne uken så de kan svare på nytt. Analysene beholdes.</div>
+      <div class="field-group">
+        <label>Velg par</label>
+        <select id="admin-couple-select" style="background:var(--cream);border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:11px 13px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--ink);width:100%;outline:none;"></select>
+      </div>
+      <div id="admin-reset-msg"></div>
+      <button class="btn btn-danger" onclick="resetWeekSessions()" style="margin-bottom:8px">Nullstill ukens svar →</button>
+    </div>
   </div>
 </div>
 
@@ -506,15 +516,17 @@ const T = {
     already_answered: 'Du har svart denne uken ✓',
     see_analysis: 'Se ukens analyse →',
     q_texts: [
+      'Forrige uke',
       'Denne uken',
       'Mitt bidrag',
-      'Hva var det beste øyeblikket denne uken – og var ektefellen din til stede?',
-      'Tenk på en gang du virkelig følte deg elsket eller forstått av ektefellen din. Når var det, og hva skjedde? Det kan være fra i går eller fra flere år siden.',
-      'Var det noe denne uken du ønsket ektefellen din hadde lagt merke til eller sagt noe om?',
-      'Hva trengte du fra ektefellen denne uken som du ikke ba om – og vet du hvorfor du ikke ba om det?',
-      '«Jeg hadde det lettere denne uken da ___»'
+      'Var det noen lysglimt denne uken – eller noe som gnagde?',
+      'Når følte du deg mest elsket eller forstått? Det kan være noe lite.',
+      'Hva gjorde ektefellen din denne uken som du la merke til, men kanskje ikke sa høyt?',
+      'Hva trengte du denne uken, men ikke ba om?',
+      'Fullfør setningen: Jeg hadde trengt litt mer... fra ektefellen min denne uken. Skriv gjerne et eksempel.'
     ],
     q_placeholders: [
+      'Beskriv gjerne hva du prøvde...',
       '', '',
       'Beskriv gjerne hva som skjedde...',
       'Ta den tiden du trenger...',
@@ -610,15 +622,17 @@ const T = {
     already_answered: 'You have answered this week ✓',
     see_analysis: 'See this week\'s analysis →',
     q_texts: [
+      'Last week',
       'This week',
       'My contribution',
-      'What was the best moment this week – and was your spouse present?',
-      'Think of a time you truly felt loved or understood by your spouse. When was it, and what happened? It can be from yesterday or years ago.',
-      'Was there something this week you wished your spouse had noticed or said something about?',
-      'What did you need from your spouse this week that you didn\'t ask for – and do you know why you didn\'t ask?',
-      '"I had an easier time this week when ___"'
+      'Were there any bright moments this week – or something that gnawed at you?',
+      'When did you feel most loved or understood? It can be something small.',
+      'What did your spouse do this week that you noticed, but perhaps didn\'t say out loud?',
+      'What did you need this week, but didn\'t ask for?',
+      'Complete the sentence: I could have done with a little more... from my spouse this week. Feel free to give an example.'
     ],
     q_placeholders: [
+      'Describe what you tried...',
       '', '',
       'Describe what happened...',
       'Take your time...',
@@ -875,24 +889,28 @@ async function showExistingAnalysis(id){
 }
 
 // ── QUESTIONS ─────────────────────────────────────────────────────────────
-const QUESTIONS=[
-  {type:'statements',private:false,stmtIdx:0,scaleIdx:0},
-  {type:'statements',private:true,stmtIdx:1,scaleIdx:1},
-  {type:'textarea',private:false,qIdx:2},
-  {type:'textarea',private:false,qIdx:3},
-  {type:'textarea',private:false,qIdx:4},
-  {type:'textarea',private:true,qIdx:5},
-  {type:'textarea',private:false,qIdx:6}
+const QUESTIONS_FULL=[
+  {type:'textarea', private:true, textIdx:0},
+  {type:'statements', private:false, stmtIdx:0, scaleIdx:0, textIdx:1},
+  {type:'statements', private:true, stmtIdx:1, scaleIdx:1, textIdx:2},
+  {type:'textarea', private:false, textIdx:3},
+  {type:'textarea', private:false, textIdx:4},
+  {type:'textarea', private:false, textIdx:5},
+  {type:'textarea', private:true, textIdx:6},
+  {type:'textarea', private:false, textIdx:7}
 ];
 
-function startQuestions(){
+async function startQuestions(){
+  const {data:prevAnalyses}=await sb.from('analyses').select('id').eq('couple_id',S.coupleId).limit(1);
+  const hasHistory=prevAnalyses&&prevAnalyses.length>0;
+  S.activeQuestions=hasHistory?[...QUESTIONS_FULL]:QUESTIONS_FULL.slice(1);
   S.curQ=0;
-  S.answers=Array(QUESTIONS.length).fill(null).map(()=>({}));
+  S.answers=Array(S.activeQuestions.length).fill(null).map(()=>({}));
   renderQ();showScreen('screen-questions');
 }
 
 function renderQ(){
-  const q=QUESTIONS[S.curQ],total=QUESTIONS.length,saved=S.answers[S.curQ]||{};
+  const q=S.activeQuestions[S.curQ],total=S.activeQuestions.length,saved=S.answers[S.curQ]||{};
   const qt=T[lang];
 
   document.getElementById('q-progress').innerHTML=Array.from({length:total},(_,i)=>
@@ -903,7 +921,7 @@ function renderQ(){
   badge.className=`q-badge ${q.private?'badge-private':'badge-shared'}`;
   badge.textContent=q.private?t('badge_private'):t('badge_shared');
 
-  document.getElementById('q-text').textContent=qt.q_texts[S.curQ]||'';
+  document.getElementById('q-text').textContent=qt.q_texts[q.textIdx]||'';
 
   const area=document.getElementById('q-input-area');
   if(q.type==='statements'){
@@ -921,7 +939,7 @@ function renderQ(){
       ${si<stmts.length-1?'<div class="statement-divider"></div>':''}
     `).join('')}</div>`;
   } else {
-    area.innerHTML=`<textarea id="q-answer" placeholder="${qt.q_placeholders[S.curQ]||''}">${saved.text||''}</textarea>`;
+    area.innerHTML=`<textarea id="q-answer" placeholder="${qt.q_placeholders[q.textIdx]||''}">${saved.text||''}</textarea>`;
   }
 
   document.getElementById('privacy-msg').textContent=q.private
@@ -946,7 +964,7 @@ function saveQ(){
 
 async function nextQuestion(){
   saveQ();
-  if(S.curQ<QUESTIONS.length-1){S.curQ++;renderQ();}
+  if(S.curQ<S.activeQuestions.length-1){S.curQ++;renderQ();}
   else{
     const week=getWeekNumber(),year=new Date().getFullYear();
     await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:S.answers,lang});
@@ -981,10 +999,10 @@ async function generateAnalysis(){
 
     const qt0=T[lang0],qt1=T[lang1];
 
-    function fmtP(name,prof,ans,qt){
+    function fmtP(name,prof,ans,qt,activeQs){
       let o=`=== ${name} – Profile ===\nHow they met: ${prof.met||'not provided'}\nChildren: ${prof.children||'not provided'}\nChallenges: ${prof.challenge||'not provided'}\nWhat works: ${prof.good||'not provided'}\nHope: ${prof.hope||'not provided'}\nScores (1-5): Expresses needs: ${(prof.scales||[])[0]||'?'}, Understands spouse needs: ${(prof.scales||[])[1]||'?'}, Recovers from conflict: ${(prof.scales||[])[2]||'?'}\n\n=== ${name} – Weekly answers ===\n`;
-      QUESTIONS.forEach((q,i)=>{
-        o+=`\nQ${i+1} (${q.private?'PRIVATE':'shared'}): ${qt.q_texts[i]}\n`;
+      activeQs.forEach((q,i)=>{
+        o+=`\nQ${i+1} (${q.private?'PRIVATE':'shared'}): ${qt.q_texts[q.textIdx]}\n`;
         const a=ans[i]||{};
         if(q.type==='statements'){['qa','qb','qc'].forEach((id,si)=>{o+=`  ${qt.statements[q.stmtIdx]?.[si]}: ${a[id]||'?'}/5\n`;});}
         else o+=`Answer: ${a.text||'(not answered)'}\n`;
@@ -992,10 +1010,13 @@ async function generateAnalysis(){
       return o;
     }
 
+    const analysisHasQ1 = history && history.length > 0;
+    const analysisActiveQs = analysisHasQ1 ? [...QUESTIONS_FULL] : QUESTIONS_FULL.slice(1);
+
     const [n0,n1]=S.names;
     const sharedLang=lang0===lang1?lang0:'en';
 
-    const prompt=`${fmtP(n0,p0,s0,qt0)}\n\n${fmtP(n1,p1,s1,qt1)}${histCtx}
+    const prompt=`${fmtP(n0,p0,s0,qt0,analysisActiveQs)}\n\n${fmtP(n1,p1,s1,qt1,analysisActiveQs)}${histCtx}
 
 Instructions:
 
@@ -1082,6 +1103,24 @@ async function loadAdminPanel(){
   } else {
     list.innerHTML='<p style="font-size:13px;color:var(--ink-muted)">Ingen historikk ennå.</p>';
   }
+
+  // Last inn par for nullstill
+  const {data:couples}=await sb.from('couples').select('id,person1_name,person2_name,invite_code').order('created_at',{ascending:false});
+  const sel=document.getElementById('admin-couple-select');
+  if(couples&&couples.length>0){
+    sel.innerHTML=couples.map(c=>`<option value="${c.id}">${c.person1_name} & ${c.person2_name} (${c.invite_code})</option>`).join('');
+  } else {
+    sel.innerHTML='<option value="">Ingen par funnet</option>';
+  }
+}
+
+async function resetWeekSessions(){
+  const coupleId=document.getElementById('admin-couple-select').value;
+  if(!coupleId){showError('admin-reset-msg','Velg et par.');return;}
+  const week=getWeekNumber(),year=new Date().getFullYear();
+  const {error}=await sb.from('sessions').delete().eq('couple_id',coupleId).eq('week_number',week).eq('year',year);
+  if(error){showError('admin-reset-msg','Noe gikk galt: '+error.message);return;}
+  showSuccess('admin-reset-msg',`✓ Ukens svar nullstilt for valgt par (uke ${week}). Analysene er beholdt.`);
 }
 
 async function savePrompt(){
