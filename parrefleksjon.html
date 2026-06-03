@@ -169,7 +169,7 @@
       <button class="btn btn-ghost" onclick="showScreen('screen-join')" data-t="btn_have_code">Jeg har en invitasjonskode</button>
     </div>
     <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link">Admin</div>
-<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v10</div>
+<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v11</div>
   </div>
 
   <!-- SCREEN: New couple -->
@@ -516,7 +516,7 @@ const T = {
     already_answered: 'Du har svart denne uken ✓',
     see_analysis: 'Se ukens analyse →',
     q_texts: [
-      'Forrige uke',
+      'Var det noe fra forrige ukes refleksjon du prøvde å gjøre annerledes? Hva skjedde?',
       'Denne uken',
       'Mitt bidrag',
       'Var det noen lysglimt denne uken – eller noe som gnagde?',
@@ -622,7 +622,7 @@ const T = {
     already_answered: 'You have answered this week ✓',
     see_analysis: 'See this week\'s analysis →',
     q_texts: [
-      'Last week',
+      'Was there something from last week\'s reflection you tried to do differently? What happened?',
       'This week',
       'My contribution',
       'Were there any bright moments this week – or something that gnawed at you?',
@@ -958,7 +958,7 @@ function selQScale(id,val,si){
 }
 
 function saveQ(){
-  const q=QUESTIONS[S.curQ];
+  const q=S.activeQuestions[S.curQ];
   if(q.type==='textarea'){const el=document.getElementById('q-answer');if(el){if(!S.answers[S.curQ])S.answers[S.curQ]={};S.answers[S.curQ].text=el.value;}}
 }
 
