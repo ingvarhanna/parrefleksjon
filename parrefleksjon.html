@@ -178,6 +178,23 @@
       </div>
       <div id="login-msg"></div>
       <button class="btn btn-gold" onclick="sendMagicLink()">Send innloggingslenke →</button>
+      <div style="text-align:center;margin-top:1rem;font-size:12px;color:var(--ink-muted)">
+        Ved å logge inn godtar du vår <a href="#" onclick="showScreen('screen-privacy');return false;" style="color:var(--gold)">personvernerklæring</a>.
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN: Privacy -->
+  <div class="screen" id="screen-privacy">
+    <div class="card">
+      <div class="card-title">Personvern og vilkår</div>
+      <div style="font-size:14px;line-height:1.7;color:var(--ink-light);margin-top:1rem">
+        <p style="margin-bottom:1rem"><strong style="color:var(--ink)">Personvernerklæring</strong><br>
+        Parrefleksjon lagrer svarene dine kryptert i en database (Supabase). Ingvar Hanna har tilgang til databasen som eier av tjenesten. Appen er under utvikling – vi anbefaler ikke å dele noe du ikke ville sagt høyt i et vennskapsrom. Vi deler ikke data med tredjeparter.</p>
+        <p><strong style="color:var(--ink)">Ansvarsfraskrivelse</strong><br>
+        Parrefleksjon er et verktøy for refleksjon og er ikke terapi. Appen er under aktiv utvikling og feil kan forekomme. Analysene er generert av kunstig intelligens og bør ikke tolkes som faglig rådgivning. Bruk av appen skjer på eget ansvar.</p>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:1.25rem" onclick="showScreen('screen-login')">← Tilbake</button>
     </div>
   </div>
 
@@ -204,7 +221,7 @@
       <button class="btn btn-ghost" onclick="showScreen('screen-join')" data-t="btn_have_code">Jeg har en invitasjonskode</button>
     </div>
     <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link">Admin</div>
-<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v13</div>
+<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v14</div>
   </div>
 
   <!-- SCREEN: New couple -->
@@ -702,7 +719,7 @@ const T = {
 // ── STATE ────────────────────────────────────────────────────────────────
 let lang = localStorage.getItem('pr_lang') || 'no';
 let S = {
-  userId:null, userEmail:null,
+  userId:null, userEmail:null, encKey:null,
   coupleId:null, inviteCode:null, names:['',''], myIndex:null,
   onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
   answers:[], done:[false,false], curQ:0, chatH:[], activeQuestions:[]
@@ -744,6 +761,33 @@ function generateCode() {
   return words[Math.floor(Math.random()*words.length)]+Math.floor(10+Math.random()*90);
 }
 
+// ── CRYPTO ────────────────────────────────────────────────────────────────
+async function generateEncKey(){
+  const key=await crypto.subtle.generateKey({name:'AES-GCM',length:256},true,['encrypt','decrypt']);
+  const raw=await crypto.subtle.exportKey('raw',key);
+  return btoa(String.fromCharCode(...new Uint8Array(raw)));
+}
+async function importEncKey(b64){
+  const raw=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+  return crypto.subtle.importKey('raw',raw,{name:'AES-GCM'},false,['encrypt','decrypt']);
+}
+async function enc(text){
+  if(!S.encKey||!text)return text;
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},S.encKey,new TextEncoder().encode(text));
+  const out=new Uint8Array(12+ct.byteLength);
+  out.set(iv);out.set(new Uint8Array(ct),12);
+  return btoa(String.fromCharCode(...out));
+}
+async function dec(b64){
+  if(!S.encKey||!b64)return b64;
+  try{
+    const data=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+    const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:data.slice(0,12)},S.encKey,data.slice(12));
+    return new TextDecoder().decode(pt);
+  }catch(e){return b64;}
+}
+
 // ── AUTH ──────────────────────────────────────────────────────────────────
 async function sendMagicLink(){
   const email=document.getElementById('login-email').value.trim();
@@ -759,7 +803,7 @@ async function sendMagicLink(){
 
 async function loadUserProfile(){
   const {data:profile}=await sb.from('profiles')
-    .select('couple_id,person_index,couples(person1_name,person2_name,invite_code)')
+    .select('couple_id,person_index,couples(person1_name,person2_name,invite_code,encryption_key)')
     .eq('user_id',S.userId)
     .single();
   if(profile){
@@ -767,6 +811,7 @@ async function loadUserProfile(){
     S.myIndex=profile.person_index;
     S.names=[profile.couples.person1_name,profile.couples.person2_name];
     S.inviteCode=profile.couples.invite_code;
+    if(profile.couples.encryption_key) S.encKey=await importEncKey(profile.couples.encryption_key);
     await showChoose();
   } else {
     showScreen('screen-start');
@@ -775,7 +820,7 @@ async function loadUserProfile(){
 
 async function logout(){
   await sb.auth.signOut();
-  S={userId:null,userEmail:null,coupleId:null,inviteCode:null,names:['',''],myIndex:null,
+  S={userId:null,userEmail:null,encKey:null,coupleId:null,inviteCode:null,names:['',''],myIndex:null,
     onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
     answers:[],done:[false,false],curQ:0,chatH:[],activeQuestions:[]};
   showScreen('screen-login');
@@ -829,9 +874,11 @@ async function createCouple(){
   const spouseN=document.getElementById('spouse-name').value.trim();
   if(!myN||!spouseN){showError('new-couple-error',lang==='no'?'Skriv inn begge navn.':'Enter both names.');return;}
   const code=generateCode();
-  const {data,error}=await sb.from('couples').insert({invite_code:code,person1_name:myN,person2_name:spouseN}).select().single();
+  const keyB64=await generateEncKey();
+  const {data,error}=await sb.from('couples').insert({invite_code:code,person1_name:myN,person2_name:spouseN,encryption_key:keyB64}).select().single();
   if(error){showError('new-couple-error',lang==='no'?'Noe gikk galt. Prøv igjen.':'Something went wrong. Please try again.');return;}
   S.coupleId=data.id;S.inviteCode=code;S.names=[myN,spouseN];S.myIndex=0;
+  S.encKey=await importEncKey(keyB64);
   document.getElementById('show-invite-code').textContent=code;
   showScreen('screen-invite');
 }
@@ -842,6 +889,7 @@ async function joinCouple(){
   const {data,error}=await sb.from('couples').select().eq('invite_code',code).single();
   if(error||!data){showError('join-error',lang==='no'?'Fant ikke dette paret. Sjekk koden.':'Couple not found. Check the code.');return;}
   S.coupleId=data.id;S.inviteCode=code;S.names=[data.person1_name,data.person2_name];S.myIndex=1;
+  if(data.encryption_key) S.encKey=await importEncKey(data.encryption_key);
   showChoose();
 }
 
@@ -887,9 +935,13 @@ async function onbNext(step){
     await sb.from('profiles').insert({
       couple_id:S.coupleId,person_index:S.myIndex,
       user_id:S.userId,
-      challenge:S.onbData.challenge,good:S.onbData.good,hope:S.onbData.hope,
+      challenge:await enc(S.onbData.challenge),
+      good:await enc(S.onbData.good),
+      hope:await enc(S.onbData.hope),
       scales:S.onbData.scales,
-      met:S.onbData.met,children:S.onbData.children,lang
+      met:await enc(S.onbData.met),
+      children:await enc(S.onbData.children),
+      lang
     });
     document.getElementById('onb-done-title').textContent=t('onb_done_title')(myName());
     document.getElementById('onb-done-sub').textContent=t('onb_done_sub');
@@ -959,7 +1011,11 @@ async function loadHistory(){
 
 async function showExistingAnalysis(id){
   const {data}=await sb.from('analyses').select().eq('id',id).single();
-  if(data)displayAnalysis(data.shared_analysis,data.private_analysis_1,data.private_analysis_2);
+  if(data)displayAnalysis(
+    await dec(data.shared_analysis),
+    await dec(data.private_analysis_1),
+    await dec(data.private_analysis_2)
+  );
 }
 
 // ── QUESTIONS ─────────────────────────────────────────────────────────────
@@ -1039,7 +1095,8 @@ async function nextQuestion(){
   if(S.curQ<S.activeQuestions.length-1){S.curQ++;renderQ();}
   else{
     const week=getWeekNumber(),year=new Date().getFullYear();
-    await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:S.answers,lang});
+    const encAnswers={e:await enc(JSON.stringify(S.answers))};
+    await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:encAnswers,lang});
     S.done[S.myIndex]=true;
     document.getElementById('done-one-title').textContent=t('done_title')(myName());
     document.getElementById('done-one-sub').textContent=(S.done[0]&&S.done[1])?t('done_sub_both'):t('done_sub_waiting')(spouseName());
@@ -1062,13 +1119,29 @@ async function generateAnalysis(){
     const p1=profs?.find(p=>p.person_index===1)||{};
     const week=getWeekNumber(),year=new Date().getFullYear();
     const {data:sessions}=await sb.from('sessions').select().eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year);
-    const s0=sessions?.find(s=>s.person_index===0)?.answers||{};
-    const s1=sessions?.find(s=>s.person_index===1)?.answers||{};
+    const raw0=sessions?.find(s=>s.person_index===0)?.answers||{};
+    const raw1=sessions?.find(s=>s.person_index===1)?.answers||{};
+    const s0=raw0.e?JSON.parse(await dec(raw0.e)):raw0;
+    const s1=raw1.e?JSON.parse(await dec(raw1.e)):raw1;
     const lang0=sessions?.find(s=>s.person_index===0)?.lang||'no';
     const lang1=sessions?.find(s=>s.person_index===1)?.lang||'no';
     const {data:history}=await sb.from('analyses').select().eq('couple_id',S.coupleId).order('created_at',{ascending:false}).limit(4);
-    const histCtx=history&&history.length>0?`\n\n=== Previous analyses ===\n${history.map(a=>`Week ${a.week_number} (ratings: ${a.rating_1||'?'}/5, ${a.rating_2||'?'}/5): ${a.shared_analysis.substring(0,200)}...`).join('\n')}`:'';
+    const decHistory=await Promise.all((history||[]).map(async a=>({
+      ...a,
+      shared_analysis:await dec(a.shared_analysis)
+    })));
+    const histCtx=decHistory.length>0?`\n\n=== Previous analyses ===\n${decHistory.map(a=>`Week ${a.week_number} (ratings: ${a.rating_1||'?'}/5, ${a.rating_2||'?'}/5): ${a.shared_analysis.substring(0,200)}...`).join('\n')}`:'';
 
+    const dp0={
+      met:await dec(p0.met||''),children:await dec(p0.children||''),
+      challenge:await dec(p0.challenge||''),good:await dec(p0.good||''),
+      hope:await dec(p0.hope||''),scales:p0.scales
+    };
+    const dp1={
+      met:await dec(p1.met||''),children:await dec(p1.children||''),
+      challenge:await dec(p1.challenge||''),good:await dec(p1.good||''),
+      hope:await dec(p1.hope||''),scales:p1.scales
+    };
     const qt0=T[lang0],qt1=T[lang1];
 
     function fmtP(name,prof,ans,qt,activeQs){
@@ -1088,7 +1161,7 @@ async function generateAnalysis(){
     const [n0,n1]=S.names;
     const sharedLang=lang0===lang1?lang0:'en';
 
-    const prompt=`${fmtP(n0,p0,s0,qt0,analysisActiveQs)}\n\n${fmtP(n1,p1,s1,qt1,analysisActiveQs)}${histCtx}
+    const prompt=`${fmtP(n0,dp0,s0,qt0,analysisActiveQs)}\n\n${fmtP(n1,dp1,s1,qt1,analysisActiveQs)}${histCtx}
 
 Instructions:
 
@@ -1108,7 +1181,12 @@ Only [SHARED], [PRIVATE_1], [PRIVATE_2]. No text outside these.`;
     const priv1=extract(text,'[PRIVATE_1]',['[PRIVATE_2]']);
     const priv2=extract(text,'[PRIVATE_2]',[]);
 
-    await sb.from('analyses').insert({couple_id:S.coupleId,week_number:week,year,shared_analysis:felles,private_analysis_1:priv1,private_analysis_2:priv2});
+    await sb.from('analyses').insert({
+      couple_id:S.coupleId,week_number:week,year,
+      shared_analysis:await enc(felles),
+      private_analysis_1:await enc(priv1),
+      private_analysis_2:await enc(priv2)
+    });
     clearInterval(iv);
     displayAnalysis(felles,priv1,priv2);
   }catch(e){clearInterval(iv);console.error(e);alert(`Error: ${e.message}`);showChoose();}
