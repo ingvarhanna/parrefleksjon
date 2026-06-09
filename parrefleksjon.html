@@ -163,8 +163,40 @@
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
   </div>
 
+  <!-- SCREEN: Login -->
+  <div class="screen" id="screen-login">
+    <div class="header">
+      <div class="header-eyebrow">Ukentlig refleksjon</div>
+      <h1>Par<em>refleksjon</em></h1>
+    </div>
+    <div class="card">
+      <div class="card-title">Logg inn</div>
+      <div class="card-sub">Skriv inn e-postadressen din. Vi sender deg en innloggingslenke – ingen passord nødvendig.</div>
+      <div class="field-group">
+        <label>E-postadresse</label>
+        <input type="email" id="login-email" placeholder="din@epost.no" />
+      </div>
+      <div id="login-msg"></div>
+      <button class="btn btn-gold" onclick="sendMagicLink()">Send innloggingslenke →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN: Login sent -->
+  <div class="screen" id="screen-login-sent">
+    <div class="header">
+      <div class="header-eyebrow">Ukentlig refleksjon</div>
+      <h1>Par<em>refleksjon</em></h1>
+    </div>
+    <div class="card" style="text-align:center;padding:2rem 1.25rem">
+      <div style="font-size:2rem;margin-bottom:1rem">✉️</div>
+      <div class="card-title" style="margin-bottom:0.5rem">Sjekk e-posten</div>
+      <div class="card-sub">Vi har sendt en innloggingslenke til <strong id="login-email-sent"></strong>. Klikk på lenken for å logge inn.</div>
+      <div class="card-sub" style="margin-top:0.75rem;font-size:12px">Lukk ikke denne fanen – du kommer tilbake hit etter innlogging.</div>
+    </div>
+  </div>
+
   <!-- SCREEN: Start -->
-  <div class="screen active" id="screen-start">
+  <div class="screen" id="screen-start">
     <div class="card">
       <div class="card-title" data-t="start_title">Kom i gang</div>
       <div class="card-sub" data-t="start_sub">Opprett et nytt par, eller åpne med invitasjonskoden du fikk fra ektefellen din.</div>
@@ -172,7 +204,7 @@
       <button class="btn btn-ghost" onclick="showScreen('screen-join')" data-t="btn_have_code">Jeg har en invitasjonskode</button>
     </div>
     <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link">Admin</div>
-<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v12</div>
+<div style="text-align:center;font-size:10px;color:var(--ink-muted);margin-top:0.5rem">v13</div>
   </div>
 
   <!-- SCREEN: New couple -->
@@ -314,6 +346,9 @@
     <div class="card" id="history-card" style="display:none">
       <div class="analysis-label" data-t="history_label">Tidligere analyser</div>
       <div id="history-list"></div>
+    </div>
+    <div style="text-align:center;margin-top:0.5rem">
+      <button class="btn btn-ghost" style="font-size:12px;color:var(--ink-muted)" onclick="logout()">Logg ut</button>
     </div>
   </div>
 
@@ -667,9 +702,10 @@ const T = {
 // ── STATE ────────────────────────────────────────────────────────────────
 let lang = localStorage.getItem('pr_lang') || 'no';
 let S = {
+  userId:null, userEmail:null,
   coupleId:null, inviteCode:null, names:['',''], myIndex:null,
   onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
-  answers:[], done:[false,false], curQ:0, chatH:[]
+  answers:[], done:[false,false], curQ:0, chatH:[], activeQuestions:[]
 };
 
 function t(key) { return T[lang][key] || T['no'][key] || key; }
@@ -708,21 +744,58 @@ function generateCode() {
   return words[Math.floor(Math.random()*words.length)]+Math.floor(10+Math.random()*90);
 }
 
-function saveLocal() {
-  localStorage.setItem('pr_couple', JSON.stringify({
-    coupleId:S.coupleId, inviteCode:S.inviteCode, names:S.names, myIndex:S.myIndex
-  }));
+// ── AUTH ──────────────────────────────────────────────────────────────────
+async function sendMagicLink(){
+  const email=document.getElementById('login-email').value.trim();
+  if(!email){showError('login-msg','Skriv inn e-postadressen din.');return;}
+  const {error}=await sb.auth.signInWithOtp({
+    email,
+    options:{emailRedirectTo:window.location.href}
+  });
+  if(error){showError('login-msg',error.message);return;}
+  document.getElementById('login-email-sent').textContent=email;
+  showScreen('screen-login-sent');
 }
 
-function loadLocal() {
-  try {
-    const d=JSON.parse(localStorage.getItem('pr_couple'));
-    if(d&&d.coupleId){S.coupleId=d.coupleId;S.inviteCode=d.inviteCode;S.names=d.names;S.myIndex=d.myIndex;return true;}
-  } catch(e){}
-  return false;
+async function loadUserProfile(){
+  const {data:profile}=await sb.from('profiles')
+    .select('couple_id,person_index,couples(person1_name,person2_name,invite_code)')
+    .eq('user_id',S.userId)
+    .single();
+  if(profile){
+    S.coupleId=profile.couple_id;
+    S.myIndex=profile.person_index;
+    S.names=[profile.couples.person1_name,profile.couples.person2_name];
+    S.inviteCode=profile.couples.invite_code;
+    await showChoose();
+  } else {
+    showScreen('screen-start');
+  }
 }
 
-async function callClaude(messages, max_tokens=1200) {
+async function logout(){
+  await sb.auth.signOut();
+  S={userId:null,userEmail:null,coupleId:null,inviteCode:null,names:['',''],myIndex:null,
+    onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
+    answers:[],done:[false,false],curQ:0,chatH:[],activeQuestions:[]};
+  showScreen('screen-login');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('load',async ()=>{
+  setLang(lang);
+  sb.auth.onAuthStateChange(async(event,session)=>{
+    if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session){
+      S.userId=session.user.id;
+      S.userEmail=session.user.email;
+      await loadUserProfile();
+    } else if(event==='SIGNED_OUT'){
+      showScreen('screen-login');
+    }
+  });
+  const {data:{session}}=await sb.auth.getSession();
+  if(!session) showScreen('screen-login');
+});async function callClaude(messages, max_tokens=1200) {
   const res=await fetch(PROXY_URL,{
     method:'POST',
     headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_ANON}`},
@@ -750,13 +823,7 @@ function sendSMS(){
   window.open(`sms:?body=${encodeURIComponent(msg)}`);
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────
-window.addEventListener('load',()=>{
-  setLang(lang);
-  if(loadLocal()) showChoose();
-});
-
-// ── COUPLE SETUP ──────────────────────────────────────────────────────────
+// ── AUTH ──────────────────────────────────────────────────────────────────
 async function createCouple(){
   const myN=document.getElementById('my-name').value.trim();
   const spouseN=document.getElementById('spouse-name').value.trim();
@@ -765,7 +832,6 @@ async function createCouple(){
   const {data,error}=await sb.from('couples').insert({invite_code:code,person1_name:myN,person2_name:spouseN}).select().single();
   if(error){showError('new-couple-error',lang==='no'?'Noe gikk galt. Prøv igjen.':'Something went wrong. Please try again.');return;}
   S.coupleId=data.id;S.inviteCode=code;S.names=[myN,spouseN];S.myIndex=0;
-  saveLocal();
   document.getElementById('show-invite-code').textContent=code;
   showScreen('screen-invite');
 }
@@ -776,7 +842,6 @@ async function joinCouple(){
   const {data,error}=await sb.from('couples').select().eq('invite_code',code).single();
   if(error||!data){showError('join-error',lang==='no'?'Fant ikke dette paret. Sjekk koden.':'Couple not found. Check the code.');return;}
   S.coupleId=data.id;S.inviteCode=code;S.names=[data.person1_name,data.person2_name];S.myIndex=1;
-  saveLocal();
   showChoose();
 }
 
@@ -821,6 +886,7 @@ async function onbNext(step){
   } else if(step==='scales'){
     await sb.from('profiles').insert({
       couple_id:S.coupleId,person_index:S.myIndex,
+      user_id:S.userId,
       challenge:S.onbData.challenge,good:S.onbData.good,hope:S.onbData.hope,
       scales:S.onbData.scales,
       met:S.onbData.met,children:S.onbData.children,lang
@@ -1069,7 +1135,7 @@ async function saveRating(score){
   document.getElementById('rating-msg').style.cssText='font-size:13px;color:var(--gold);margin-top:0.5rem';
 }
 
-
+function extract(text,start,ends){
   const s=text.indexOf(start);if(s===-1)return'';
   let e=text.length;
   for(const t of ends){const i=text.indexOf(t,s+start.length);if(i!==-1&&i<e)e=i;}
