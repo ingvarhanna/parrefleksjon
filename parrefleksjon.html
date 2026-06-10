@@ -167,16 +167,16 @@
   <!-- SCREEN: Login -->
   <div class="screen" id="screen-login">
     <div class="card">
-      <div class="card-title">Logg inn</div>
-      <div class="card-sub">Skriv inn e-postadressen din. Vi sender deg en innloggingslenke – ingen passord nødvendig.</div>
+      <div class="card-title" data-t="login_title">Logg inn</div>
+      <div class="card-sub" data-t="login_sub">Skriv inn e-postadressen din. Vi sender deg en innloggingslenke – ingen passord nødvendig.</div>
       <div class="field-group">
-        <label>E-postadresse</label>
+        <label data-t="login_email_label">E-postadresse</label>
         <input type="email" id="login-email" placeholder="din@epost.no" />
       </div>
       <div id="login-msg"></div>
-      <button class="btn btn-gold" onclick="sendMagicLink()">Send innloggingslenke →</button>
+      <button class="btn btn-gold" onclick="sendMagicLink()" data-t="login_btn">Send innloggingslenke →</button>
       <div style="text-align:center;margin-top:1rem;font-size:12px;color:var(--ink-muted)">
-        Ved å logge inn godtar du vår <a href="#" onclick="showScreen('screen-privacy');return false;" style="color:var(--gold)">personvernerklæring</a>.
+        <span data-t="login_privacy_pre">Ved å logge inn godtar du vår</span> <a href="#" onclick="showScreen('screen-privacy');return false;" style="color:var(--gold)" data-t="login_privacy_link">personvernerklæring</a>.
       </div>
     </div>
   </div>
@@ -199,9 +199,9 @@
   <div class="screen" id="screen-login-sent">
     <div class="card" style="text-align:center;padding:2rem 1.25rem">
       <div style="font-size:2rem;margin-bottom:1rem">✉️</div>
-      <div class="card-title" style="margin-bottom:0.5rem">Sjekk e-posten</div>
-      <div class="card-sub">Vi har sendt en innloggingslenke til <strong id="login-email-sent"></strong>. Klikk på lenken for å logge inn.</div>
-      <div class="card-sub" style="margin-top:0.75rem;font-size:12px">Lukk ikke denne fanen – du kommer tilbake hit etter innlogging.</div>
+      <div class="card-title" style="margin-bottom:0.5rem" data-t="login_sent_title">Sjekk e-posten</div>
+      <div class="card-sub"><span data-t="login_sent_pre">Vi har sendt en innloggingslenke til</span> <strong id="login-email-sent"></strong>. <span data-t="login_sent_post">Klikk på lenken for å logge inn.</span></div>
+      <div class="card-sub" style="margin-top:0.75rem;font-size:12px" data-t="login_sent_note">Lukk ikke denne fanen – du kommer tilbake hit etter innlogging.</div>
     </div>
   </div>
 
@@ -357,7 +357,7 @@
       <div id="history-list"></div>
     </div>
     <div style="text-align:center;margin-top:0.5rem">
-      <button class="btn btn-ghost" style="font-size:12px;color:var(--ink-muted)" onclick="logout()">Logg ut</button>
+      <button class="btn btn-ghost" style="font-size:12px;color:var(--ink-muted)" onclick="logout()" data-t="logout_btn">Logg ut</button>
     </div>
   </div>
 
@@ -516,6 +516,17 @@ const T = {
     eyebrow: 'Ukentlig refleksjon',
     tagline: 'Forankret i Love & Respect · Privat refleksjon · Felles vekst',
     start_title: 'Kom i gang',
+    login_title: 'Logg inn',
+    login_sub: 'Skriv inn e-postadressen din. Vi sender deg en innloggingslenke – ingen passord nødvendig.',
+    login_email_label: 'E-postadresse',
+    login_btn: 'Send innloggingslenke →',
+    login_privacy_pre: 'Ved å logge inn godtar du vår',
+    login_privacy_link: 'personvernerklæring',
+    login_sent_title: 'Sjekk e-posten',
+    login_sent_pre: 'Vi har sendt en innloggingslenke til',
+    login_sent_post: 'Klikk på lenken for å logge inn.',
+    login_sent_note: 'Lukk ikke denne fanen – du kommer tilbake hit etter innlogging.',
+    logout_btn: 'Logg ut',
     start_sub: 'Opprett et nytt par, eller åpne med invitasjonskoden du fikk fra ektefellen din.',
     btn_new_couple: 'Opprett nytt par',
     btn_have_code: 'Jeg har en invitasjonskode',
@@ -618,6 +629,17 @@ const T = {
     eyebrow: 'Weekly reflection',
     tagline: 'Rooted in Love & Respect · Private reflection · Shared growth',
     start_title: 'Get started',
+    login_title: 'Sign in',
+    login_sub: 'Enter your email address. We\'ll send you a sign-in link – no password needed.',
+    login_email_label: 'Email address',
+    login_btn: 'Send sign-in link →',
+    login_privacy_pre: 'By signing in you accept our',
+    login_privacy_link: 'privacy policy',
+    login_sent_title: 'Check your email',
+    login_sent_pre: 'We\'ve sent a sign-in link to',
+    login_sent_post: 'Click the link to sign in.',
+    login_sent_note: 'Don\'t close this tab – you\'ll return here after signing in.',
+    logout_btn: 'Sign out',
     start_sub: 'Create a new couple profile, or join with the invitation code from your spouse.',
     btn_new_couple: 'Create new couple',
     btn_have_code: 'I have an invitation code',
