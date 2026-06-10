@@ -161,7 +161,7 @@
     <div class="header-eyebrow" data-t="eyebrow">Ukentlig refleksjon</div>
     <h1>Par<em>refleksjon</em></h1>
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
-    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v16.2</div>
+    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v16.4</div>
   </div>
 
   <!-- SCREEN: Login -->
@@ -179,6 +179,7 @@
         <span data-t="login_privacy_pre">Ved å logge inn godtar du vår</span> <a href="#" onclick="showScreen('screen-privacy');return false;" style="color:var(--gold)" data-t="login_privacy_link">personvernerklæring</a>.
       </div>
     </div>
+    <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link">Admin</div>
   </div>
 
   <!-- SCREEN: Privacy -->
@@ -358,6 +359,7 @@
     </div>
     <div style="text-align:center;margin-top:0.5rem">
       <button class="btn btn-ghost" style="font-size:12px;color:var(--ink-muted)" onclick="logout()" data-t="logout_btn">Logg ut</button>
+      <div class="admin-link" onclick="showScreen('screen-admin-login')" data-t="admin_link" style="margin-top:0.75rem">Admin</div>
     </div>
   </div>
 
@@ -1201,7 +1203,7 @@ async function generateAnalysis(){
 Instructions:
 
 [SHARED]
-Shared analysis, 180-220 words. Written to be read together. Use Love & Respect as primary lens. Never reveal who said what.${history&&history.length>0?' If previous ratings were low (1-2), adjust tone and approach. Use Q1 answers as signal on whether last week\'s suggestion landed – build on it or adjust accordingly. Mention development from previous weeks where relevant.':''} End with one concrete, low-threshold invitation they can try together this week. Write in ${sharedLang==='no'?'Norwegian':'English'}.
+Shared analysis, 250-300 words. Written to be read together. Structure: ~70% teaching one principle from the framework (as a wise course leader would), then brief recognition in general terms ("many couples experience...", "this can lead to..."), then one concrete low-threshold invitation for this week. Never reveal who said what. Never mention specific objects, places or activities from the answers. If only ONE person mentioned something, never present it as something "you both" notice.${history&&history.length>0?' If previous ratings were low (1-2), adjust tone and approach. Use Q1 answers as signal on whether last week\'s suggestion landed – build on it or adjust accordingly.':''} Write in ${sharedLang==='no'?'Norwegian':'English'}.
 
 [PRIVATE_1]
 Personal reflection for ${n0}, 120-150 words. Direct and personal. Only ${n0} reads this. One concrete pattern or blind spot. End with one question for ${n0} alone. Write in ${lang0==='no'?'Norwegian':'English'}.
@@ -1211,7 +1213,7 @@ Personal reflection for ${n1}, 120-150 words. Direct and personal. Only ${n1} re
 
 Only [SHARED], [PRIVATE_1], [PRIVATE_2]. No text outside these.`;
 
-    const text=await callClaude([{role:'user',content:prompt}],1200);
+    const text=await callClaude([{role:'user',content:prompt}],1600);
     const felles=extract(text,'[SHARED]',['[PRIVATE_1]','[PRIVATE_2]']);
     const priv1=extract(text,'[PRIVATE_1]',['[PRIVATE_2]']);
     const priv2=extract(text,'[PRIVATE_2]',[]);
