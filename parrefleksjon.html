@@ -161,7 +161,7 @@
     <div class="header-eyebrow" data-t="eyebrow">Ukentlig refleksjon</div>
     <h1>Par<em>refleksjon</em></h1>
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
-    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v14</div>
+    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v16</div>
   </div>
 
   <!-- SCREEN: Login -->
@@ -427,14 +427,24 @@
       </div>
     </div>
     <div class="card" id="rating-card">
-      <div class="analysis-label">Traff denne analysen?</div>
+      <div class="analysis-label">Traff dette deg?</div>
       <div class="card-sub">Din tilbakemelding hjelper appen å bli bedre over tid.</div>
-      <div class="rating-row" id="rating-row">
-        <button class="rating-btn" onclick="saveRating(1)">1</button>
-        <button class="rating-btn" onclick="saveRating(2)">2</button>
-        <button class="rating-btn" onclick="saveRating(3)">3</button>
-        <button class="rating-btn" onclick="saveRating(4)">4</button>
-        <button class="rating-btn" onclick="saveRating(5)">5</button>
+      <div style="font-size:13px;color:var(--ink);margin-top:0.85rem;margin-bottom:0.25rem">Den felles analysen</div>
+      <div class="rating-row" id="rating-row-shared">
+        <button class="rating-btn" onclick="saveRating('shared',1)">1</button>
+        <button class="rating-btn" onclick="saveRating('shared',2)">2</button>
+        <button class="rating-btn" onclick="saveRating('shared',3)">3</button>
+        <button class="rating-btn" onclick="saveRating('shared',4)">4</button>
+        <button class="rating-btn" onclick="saveRating('shared',5)">5</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.75rem"><span>Ikke i det hele tatt</span><span>Traff veldig godt</span></div>
+      <div style="font-size:13px;color:var(--ink);margin-bottom:0.25rem">Din private refleksjon</div>
+      <div class="rating-row" id="rating-row-private">
+        <button class="rating-btn" onclick="saveRating('private',1)">1</button>
+        <button class="rating-btn" onclick="saveRating('private',2)">2</button>
+        <button class="rating-btn" onclick="saveRating('private',3)">3</button>
+        <button class="rating-btn" onclick="saveRating('private',4)">4</button>
+        <button class="rating-btn" onclick="saveRating('private',5)">5</button>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.25rem"><span>Ikke i det hele tatt</span><span>Traff veldig godt</span></div>
       <div id="rating-msg"></div>
@@ -599,7 +609,7 @@ const T = {
       [
         '«Jeg var til stede – ikke bare fysisk, men mentalt.»',
         '«Jeg tok initiativ til noe som var viktig for ektefellen min.»',
-        '«Jeg reagerte på en måte jeg er stolt av når noe var vanskelig.»'
+        '«Jeg møtte ektefellen min på en bra måte denne uken.»'
       ]
     ],
     scale_labels: [['Lite','Mye'],['Sjelden','Mye']]
@@ -701,7 +711,7 @@ const T = {
       [
         '"I was present – not just physically, but mentally."',
         '"I took initiative on something that mattered to my spouse."',
-        '"I reacted in a way I am proud of when things were difficult."'
+        '"I treated my spouse well this week."'
       ]
     ],
     scale_labels: [['Little','Much'],['Rarely','Much']]
@@ -725,6 +735,9 @@ function setLang(l) {
   document.getElementById('btn-no').className = 'lang-btn' + (l==='no'?' active':'');
   document.getElementById('btn-en').className = 'lang-btn' + (l==='en'?' active':'');
   applyTranslations();
+  // Re-render aktiv skjerm som har dynamisk innhold
+  const active=document.querySelector('.screen.active');
+  if(active&&active.id==='screen-questions'&&S.activeQuestions.length>0){saveQ();renderQ();}
 }
 
 function applyTranslations() {
@@ -971,7 +984,8 @@ async function showChoose(){
   const bothDone=S.done[0]&&S.done[1];
 
   if(bothDone){
-    const {data:analysis}=await sb.from('analyses').select().eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year).single();
+    const {data:analysisList}=await sb.from('analyses').select().eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year).order('created_at',{ascending:true}).limit(1);
+    const analysis=analysisList?.[0];
     if(analysis){
       genArea.innerHTML=`<div class="ornament">· · ·</div><button class="btn btn-gold" onclick="showExistingAnalysis('${analysis.id}')">${t('see_analysis')}</button>`;
       genArea.style.display='block';
@@ -1106,6 +1120,11 @@ async function generateAnalysis(){
   const iv=setInterval(()=>{li=(li+1)%msgs.length;lel.textContent=msgs[li];},2000);
 
   try{
+    // Hindre dobbeltgenerering: sjekk om analyse allerede finnes
+    const weekCheck=getWeekNumber(),yearCheck=new Date().getFullYear();
+    const {data:existing}=await sb.from('analyses').select('id').eq('couple_id',S.coupleId).eq('week_number',weekCheck).eq('year',yearCheck).limit(1);
+    if(existing&&existing.length>0){clearInterval(iv);showExistingAnalysis(existing[0].id);return;}
+
     const {data:profs}=await sb.from('profiles').select().eq('couple_id',S.coupleId);
     const p0=profs?.find(p=>p.person_index===0)||{};
     const p1=profs?.find(p=>p.person_index===1)||{};
@@ -1122,7 +1141,7 @@ async function generateAnalysis(){
       ...a,
       shared_analysis:await dec(a.shared_analysis)
     })));
-    const histCtx=decHistory.length>0?`\n\n=== Previous analyses ===\n${decHistory.map(a=>`Week ${a.week_number} (ratings: ${a.rating_1||'?'}/5, ${a.rating_2||'?'}/5): ${a.shared_analysis.substring(0,200)}...`).join('\n')}`:'';
+    const histCtx=decHistory.length>0?`\n\n=== Previous analyses ===\n${decHistory.map(a=>`Week ${a.week_number} (shared ratings: ${a.rating_shared_1||'?'}/5, ${a.rating_shared_2||'?'}/5; private ratings: ${a.rating_private_1||'?'}/5, ${a.rating_private_2||'?'}/5): ${a.shared_analysis.substring(0,200)}...`).join('\n')}`:'';
 
     const dp0={
       met:await dec(p0.met||''),children:await dec(p0.children||''),
@@ -1181,7 +1200,13 @@ Only [SHARED], [PRIVATE_1], [PRIVATE_2]. No text outside these.`;
     });
     clearInterval(iv);
     displayAnalysis(felles,priv1,priv2);
-  }catch(e){clearInterval(iv);console.error(e);alert(`Error: ${e.message}`);showChoose();}
+  }catch(e){
+    clearInterval(iv);console.error(e);
+    await showChoose();
+    const genArea=document.getElementById('generate-area');
+    genArea.style.display='block';
+    genArea.innerHTML=`<div style="background:#FBF0EF;border:0.5px solid #C4716A;border-radius:var(--radius-sm);padding:12px;font-size:13px;color:#A05550;margin-bottom:8px">${lang==='no'?'Noe gikk galt under genereringen. Prøv igjen.':'Something went wrong. Please try again.'}</div><button class="btn btn-gold" onclick="generateAnalysis()">${t('btn_generate')}</button>`;
+  }
 }
 
 function displayAnalysis(felles,priv1,priv2){
@@ -1190,18 +1215,20 @@ function displayAnalysis(felles,priv1,priv2){
   document.getElementById('my-private-label').textContent=t('private_label')(myName());
   document.getElementById('my-private-analysis').textContent=myPrivate;
   S.chatH=[{role:'assistant',content:myPrivate}];
+  document.getElementById('my-chat-messages').innerHTML='';
+  document.getElementById('my-chat-input').value='';
   showScreen('screen-analysis');
 }
 
-async function saveRating(score){
+async function saveRating(kind,score){
   const week=getWeekNumber(),year=new Date().getFullYear();
-  const col=`rating_${S.myIndex+1}`;
+  const col=`rating_${kind}_${S.myIndex+1}`;
   await sb.from('analyses').update({[col]:score}).eq('couple_id',S.coupleId).eq('week_number',week).eq('year',year);
-  document.querySelectorAll('.rating-btn').forEach((b,i)=>{
+  document.querySelectorAll(`#rating-row-${kind} .rating-btn`).forEach((b,i)=>{
     b.classList.toggle('selected',i+1===score);
     b.onclick=null;
   });
-  document.getElementById('rating-msg').textContent=`✓ Takk – du ga ${score}/5`;
+  document.getElementById('rating-msg').textContent='✓ Takk for tilbakemeldingen';
   document.getElementById('rating-msg').style.cssText='font-size:13px;color:var(--gold);margin-top:0.5rem';
 }
 
@@ -1232,22 +1259,39 @@ async function sendChat(){
 }
 
 // ── ADMIN ─────────────────────────────────────────────────────────────────
+let adminToken=null;
 async function adminLogin(){
   const pw=document.getElementById('admin-password-input').value;
-  const {data}=await sb.from('settings').select('value').eq('key','admin_password').single();
-  if(!data||data.value!==pw){showError('admin-login-error','Feil passord.');return;}
+  const res=await fetch(`${SUPABASE_URL}/functions/v1/super-task`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_ANON}`},
+    body:JSON.stringify({action:'admin_verify',password:pw})
+  });
+  const out=await res.json();
+  if(!out.ok){showError('admin-login-error','Feil passord.');return;}
+  adminToken=pw;
   await loadAdminPanel();
   showScreen('screen-admin');
 }
 
-async function loadAdminPanel(){
-  const {data}=await sb.from('settings').select('value').eq('key','system_prompt').single();
-  if(data) document.getElementById('admin-prompt').value=data.value;
+async function adminCall(action,payload={}){
+  const res=await fetch(PROXY_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${SUPABASE_ANON}`},
+    body:JSON.stringify({action,password:adminToken,...payload})
+  });
+  return res.json();
+}
 
-  const {data:hist}=await sb.from('settings_history').select().eq('key','system_prompt').order('changed_at',{ascending:false}).limit(10);
+async function loadAdminPanel(){
+  const out=await adminCall('admin_get_data');
+  if(!out.ok)return;
+
+  document.getElementById('admin-prompt').value=out.prompt||'';
+
   const list=document.getElementById('admin-history-list');
-  if(hist&&hist.length>0){
-    list.innerHTML=hist.map(h=>{
+  if(out.history&&out.history.length>0){
+    list.innerHTML=out.history.map(h=>{
       const date=new Date(h.changed_at).toLocaleDateString('no-NO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
       return `<div class="history-entry">
         <div class="history-date">${date}</div>
@@ -1258,11 +1302,9 @@ async function loadAdminPanel(){
     list.innerHTML='<p style="font-size:13px;color:var(--ink-muted)">Ingen historikk ennå.</p>';
   }
 
-  // Last inn par for nullstill
-  const {data:couples}=await sb.from('couples').select('id,person1_name,person2_name,invite_code').order('created_at',{ascending:false});
   const sel=document.getElementById('admin-couple-select');
-  if(couples&&couples.length>0){
-    sel.innerHTML=couples.map(c=>`<option value="${c.id}">${c.person1_name} & ${c.person2_name} (${c.invite_code})</option>`).join('');
+  if(out.couples&&out.couples.length>0){
+    sel.innerHTML=out.couples.map(c=>`<option value="${c.id}">${c.person1_name} & ${c.person2_name} (${c.invite_code})</option>`).join('');
   } else {
     sel.innerHTML='<option value="">Ingen par funnet</option>';
   }
@@ -1272,8 +1314,8 @@ async function resetWeekSessions(){
   const coupleId=document.getElementById('admin-couple-select').value;
   if(!coupleId){showError('admin-reset-msg','Velg et par.');return;}
   const week=getWeekNumber(),year=new Date().getFullYear();
-  const {error}=await sb.from('sessions').delete().eq('couple_id',coupleId).eq('week_number',week).eq('year',year);
-  if(error){showError('admin-reset-msg','Noe gikk galt: '+error.message);return;}
+  const out=await adminCall('admin_reset_week',{couple_id:coupleId,week_number:week,year});
+  if(!out.ok){showError('admin-reset-msg','Noe gikk galt.');return;}
   showSuccess('admin-reset-msg',`✓ Ukens svar nullstilt for valgt par (uke ${week}). Analysene er beholdt.`);
 }
 
@@ -1281,15 +1323,8 @@ async function savePrompt(){
   const newPrompt=document.getElementById('admin-prompt').value.trim();
   const note=document.getElementById('admin-note').value.trim()||'Ingen notat';
   if(!newPrompt){showError('admin-save-msg','Skriv inn en systemprompt.');return;}
-
-  // Lagre gammel versjon i historikk
-  const {data:current}=await sb.from('settings').select('value').eq('key','system_prompt').single();
-  if(current){
-    await sb.from('settings_history').insert({key:'system_prompt',value:current.value,note});
-  }
-
-  // Oppdater nåværende
-  await sb.from('settings').update({value:newPrompt,note,updated_at:new Date().toISOString()}).eq('key','system_prompt');
+  const out=await adminCall('admin_save_prompt',{prompt:newPrompt,note});
+  if(!out.ok){showError('admin-save-msg','Noe gikk galt.');return;}
   showSuccess('admin-save-msg','✓ Lagret og publisert. Alle nye analyser bruker den oppdaterte prompten.');
   await loadAdminPanel();
   document.getElementById('admin-note').value='';
