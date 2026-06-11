@@ -168,7 +168,7 @@
     <div class="header-eyebrow" data-t="eyebrow">Ukentlig refleksjon</div>
     <h1>Par<em>refleksjon</em></h1>
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
-    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v17</div>
+    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v17.1</div>
   </div>
 
   <!-- SCREEN: Login -->
@@ -505,7 +505,7 @@
         <input type="text" id="admin-note" placeholder="F.eks. Justert tone, lagt til L&R-eksempel..." />
       </div>
       <div id="admin-save-msg"></div>
-      <button class="btn btn-gold" onclick="savePrompt()" style="margin-bottom:8px">Lagre og publiser →</button>
+      <button class="btn btn-gold" onclick="savePrompt(this)" style="margin-bottom:8px">Lagre og publiser →</button>
       <button class="btn btn-ghost" onclick="showScreen('screen-start')">← Tilbake</button>
     </div>
     <div class="card" id="admin-history-card">
@@ -520,7 +520,7 @@
         <select id="admin-couple-select" style="background:var(--cream);border:0.5px solid var(--border-strong);border-radius:var(--radius-sm);padding:11px 13px;font-size:15px;font-family:'DM Sans',sans-serif;color:var(--ink);width:100%;outline:none;"></select>
       </div>
       <div id="admin-reset-msg"></div>
-      <button class="btn btn-danger" onclick="resetWeekSessions()" style="margin-bottom:8px">Nullstill ukens svar →</button>
+      <button class="btn btn-danger" onclick="resetWeekSessions(this)" style="margin-bottom:8px">Nullstill ukens svar →</button>
     </div>
   </div>
 </div>
@@ -1591,20 +1591,26 @@ async function loadAdminPanel(){
   }
 }
 
-async function resetWeekSessions(){
+async function resetWeekSessions(btn){
   const coupleId=document.getElementById('admin-couple-select').value;
   if(!coupleId){showError('admin-reset-msg','Velg et par.');return;}
   const week=getWeekNumber(),year=new Date().getFullYear();
+  const orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.style.opacity='0.6';btn.textContent='Sletter...';}
   const out=await adminCall('admin_reset_week',{couple_id:coupleId,week_number:week,year});
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent=orig;}
   if(!out.ok){showError('admin-reset-msg','Noe gikk galt.');return;}
   showSuccess('admin-reset-msg',`✓ Ukens svar nullstilt for valgt par (uke ${week}). Analysene er beholdt.`);
 }
 
-async function savePrompt(){
+async function savePrompt(btn){
   const newPrompt=document.getElementById('admin-prompt').value.trim();
   const note=document.getElementById('admin-note').value.trim()||'Ingen notat';
   if(!newPrompt){showError('admin-save-msg','Skriv inn en systemprompt.');return;}
+  const orig=btn?btn.textContent:'';
+  if(btn){btn.disabled=true;btn.style.opacity='0.6';btn.textContent='Lagrer...';}
   const out=await adminCall('admin_save_prompt',{prompt:newPrompt,note});
+  if(btn){btn.disabled=false;btn.style.opacity='';btn.textContent=orig;}
   if(!out.ok){showError('admin-save-msg','Noe gikk galt.');return;}
   showSuccess('admin-save-msg','✓ Lagret og publisert. Alle nye analyser bruker den oppdaterte prompten.');
   await loadAdminPanel();
