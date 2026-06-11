@@ -149,6 +149,13 @@
   .history-date { font-size: 11px; color: var(--ink-muted); margin-bottom: 4px; }
   .history-note { font-size: 13px; color: var(--ink); }
   .admin-link { font-size: 11px; color: var(--ink-muted); text-align: center; margin-top: 2rem; cursor: pointer; text-decoration: underline; }
+  .iv-opt{display:block;width:100%;text-align:left;padding:0.85rem 1rem;margin-bottom:8px;background:var(--warm-white);border:1px solid var(--border-strong);border-radius:var(--radius-sm);font-size:14.5px;color:var(--ink);cursor:pointer;font-family:inherit;line-height:1.4}
+  .iv-opt:active{border-color:var(--gold);background:var(--gold-pale)}
+  .iv-thinking{display:flex;gap:6px;justify-content:center;padding:1.5rem 0 0.75rem}
+  .iv-thinking span{width:7px;height:7px;border-radius:50%;background:var(--gold);animation:ivb 1.2s infinite}
+  .iv-thinking span:nth-child(2){animation-delay:0.2s}
+  .iv-thinking span:nth-child(3){animation-delay:0.4s}
+  @keyframes ivb{0%,80%,100%{opacity:0.25}40%{opacity:1}}
 </style>
 </head>
 <body>
@@ -161,7 +168,7 @@
     <div class="header-eyebrow" data-t="eyebrow">Ukentlig refleksjon</div>
     <h1>Par<em>refleksjon</em></h1>
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
-    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v16.4</div>
+    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v17</div>
   </div>
 
   <!-- SCREEN: Login -->
@@ -385,6 +392,18 @@
   </div>
 
   <!-- SCREEN: Done one -->
+  <div class="screen" id="screen-interview">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <span class="q-badge badge-private" id="iv-badge"></span>
+        <span style="font-size:12px;color:var(--ink-muted)" id="iv-counter"></span>
+      </div>
+      <div id="iv-question" style="font-size:17px;line-height:1.45;color:var(--ink);margin-bottom:1rem"></div>
+      <div id="iv-area"></div>
+      <div id="iv-privacy" style="font-size:11.5px;color:var(--ink-muted);margin-top:0.85rem;text-align:center"></div>
+    </div>
+  </div>
+
   <div class="screen" id="screen-done-one">
     <div class="card">
       <div class="waiting-box">
@@ -429,9 +448,9 @@
       </div>
     </div>
     <div class="card" id="rating-card">
-      <div class="analysis-label">Traff dette deg?</div>
-      <div class="card-sub">Din tilbakemelding hjelper appen å bli bedre over tid.</div>
-      <div style="font-size:13px;color:var(--ink);margin-top:0.85rem;margin-bottom:0.25rem">Den felles analysen</div>
+      <div class="analysis-label" data-t="rating_title">Traff dette deg?</div>
+      <div class="card-sub" data-t="rating_sub">Din tilbakemelding hjelper appen å bli bedre over tid.</div>
+      <div style="font-size:13px;color:var(--ink);margin-top:0.85rem;margin-bottom:0.25rem" data-t="rating_shared_label">Den felles analysen</div>
       <div class="rating-row" id="rating-row-shared">
         <button class="rating-btn" onclick="saveRating('shared',1)">1</button>
         <button class="rating-btn" onclick="saveRating('shared',2)">2</button>
@@ -439,8 +458,8 @@
         <button class="rating-btn" onclick="saveRating('shared',4)">4</button>
         <button class="rating-btn" onclick="saveRating('shared',5)">5</button>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.75rem"><span>Ikke i det hele tatt</span><span>Traff veldig godt</span></div>
-      <div style="font-size:13px;color:var(--ink);margin-bottom:0.25rem">Din private refleksjon</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.75rem"><span data-t="rating_low">Ikke i det hele tatt</span><span data-t="rating_high">Traff veldig godt</span></div>
+      <div style="font-size:13px;color:var(--ink);margin-bottom:0.25rem" data-t="rating_private_label">Din private refleksjon</div>
       <div class="rating-row" id="rating-row-private">
         <button class="rating-btn" onclick="saveRating('private',1)">1</button>
         <button class="rating-btn" onclick="saveRating('private',2)">2</button>
@@ -448,7 +467,7 @@
         <button class="rating-btn" onclick="saveRating('private',4)">4</button>
         <button class="rating-btn" onclick="saveRating('private',5)">5</button>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.25rem"><span>Ikke i det hele tatt</span><span>Traff veldig godt</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--ink-muted);margin-bottom:0.25rem"><span data-t="rating_low">Ikke i det hele tatt</span><span data-t="rating_high">Traff veldig godt</span></div>
       <div id="rating-msg"></div>
     </div>
     <div class="ornament">· · ·</div>
@@ -599,6 +618,22 @@ const T = {
     answer_btn: 'Svar på ukens spørsmål →',
     already_answered: 'Du har svart denne uken ✓',
     see_analysis: 'Se ukens analyse →',
+    rating_title: 'Traff dette deg?',
+    rating_sub: 'Din tilbakemelding hjelper appen å bli bedre over tid.',
+    rating_shared_label: 'Den felles analysen',
+    rating_private_label: 'Din private refleksjon',
+    rating_low: 'Ikke i det hele tatt',
+    rating_high: 'Traff veldig godt',
+    no_history: 'Ingen historikk ennå.',
+    iv_thinking: 'Tenker...',
+    iv_other: 'Annet',
+    iv_other_placeholder: 'Skriv kort her (valgfritt)...',
+    iv_send: 'Send →',
+    iv_finish: 'Fullfør →',
+    iv_question_n: (n) => `Spørsmål ${n}`,
+    iv_error: 'Noe gikk galt. Prøv igjen.',
+    iv_retry: 'Prøv igjen',
+    login_err_email: 'Skriv inn e-postadressen din.',
     q_texts: [
       'Har du prøvd å gjøre noe annerledes siden sist?',
       'Denne uken',
@@ -713,6 +748,22 @@ const T = {
     answer_btn: 'Answer this week\'s questions →',
     already_answered: 'You have answered this week ✓',
     see_analysis: 'See this week\'s analysis →',
+    rating_title: 'Did this resonate with you?',
+    rating_sub: 'Your feedback helps the app improve over time.',
+    rating_shared_label: 'The shared analysis',
+    rating_private_label: 'Your private reflection',
+    rating_low: 'Not at all',
+    rating_high: 'Resonated strongly',
+    no_history: 'No history yet.',
+    iv_thinking: 'Thinking...',
+    iv_other: 'Other',
+    iv_other_placeholder: 'Write briefly here (optional)...',
+    iv_send: 'Send →',
+    iv_finish: 'Finish →',
+    iv_question_n: (n) => `Question ${n}`,
+    iv_error: 'Something went wrong. Please try again.',
+    iv_retry: 'Try again',
+    login_err_email: 'Enter your email address.',
     q_texts: [
       'Have you tried doing anything differently since last time?',
       'This week',
@@ -750,7 +801,8 @@ let S = {
   userId:null, userEmail:null, encKey:null,
   coupleId:null, inviteCode:null, names:['',''], myIndex:null,
   onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
-  answers:[], done:[false,false], curQ:0, chatH:[], activeQuestions:[]
+  answers:[], done:[false,false], curQ:0, chatH:[], activeQuestions:[],
+  ivMode:false, interview:[], curIQ:null, ivCtx:''
 };
 
 function t(key) { return T[lang][key] || T['no'][key] || key; }
@@ -761,9 +813,40 @@ function setLang(l) {
   document.getElementById('btn-no').className = 'lang-btn' + (l==='no'?' active':'');
   document.getElementById('btn-en').className = 'lang-btn' + (l==='en'?' active':'');
   applyTranslations();
-  // Re-render aktiv skjerm som har dynamisk innhold
+  refreshActiveScreen();
+}
+
+// Re-render aktiv skjerm med dynamisk innhold ved språkbytte.
+// Nye skjermer med dynamisk tekst: legg til en linje her.
+function refreshActiveScreen(){
   const active=document.querySelector('.screen.active');
-  if(active&&active.id==='screen-questions'&&S.activeQuestions.length>0){saveQ();renderQ();}
+  if(!active)return;
+  switch(active.id){
+    case 'screen-questions':
+      if(S.activeQuestions.length>0){saveQ();renderQ();}
+      break;
+    case 'screen-choose':
+      showChoose();
+      break;
+    case 'screen-done-one':
+      renderDoneOne();
+      break;
+    case 'screen-analysis':
+      if(S.myIndex!==null)document.getElementById('my-private-label').textContent=t('private_label')(myName());
+      break;
+    case 'screen-interview':
+      document.getElementById('iv-badge').textContent=t('badge_private');
+      document.getElementById('iv-privacy').textContent=t('privacy_private')(spouseName());
+      if(S.curIQ)renderIvQuestion(S.curIQ);
+      break;
+    case 'screen-onboarding':
+      const od=document.getElementById('onb-done');
+      if(od&&od.classList.contains('active')){
+        document.getElementById('onb-done-title').textContent=t('onb_done_title')(myName());
+        document.getElementById('onb-done-sub').textContent=t('onb_done_sub');
+      }
+      break;
+  }
 }
 
 function applyTranslations() {
@@ -822,7 +905,7 @@ async function dec(b64){
 // ── AUTH ──────────────────────────────────────────────────────────────────
 async function sendMagicLink(){
   const email=document.getElementById('login-email').value.trim();
-  if(!email){showError('login-msg','Skriv inn e-postadressen din.');return;}
+  if(!email){showError('login-msg',t('login_err_email'));return;}
   const {error}=await sb.auth.signInWithOtp({
     email,
     options:{emailRedirectTo:window.location.href}
@@ -853,7 +936,7 @@ async function logout(){
   await sb.auth.signOut();
   S={userId:null,userEmail:null,encKey:null,coupleId:null,inviteCode:null,names:['',''],myIndex:null,
     onbData:{met:'',children:'',challenge:'',good:'',hope:'',scales:[null,null,null]},
-    answers:[],done:[false,false],curQ:0,chatH:[],activeQuestions:[]};
+    answers:[],done:[false,false],curQ:0,chatH:[],activeQuestions:[],ivMode:false,interview:[],curIQ:null,ivCtx:''};
   showScreen('screen-login');
 }
 
@@ -1063,9 +1146,11 @@ const QUESTIONS_FULL=[
 async function startQuestions(){
   const {data:prevAnalyses}=await sb.from('analyses').select('id').eq('couple_id',S.coupleId).limit(1);
   const hasHistory=prevAnalyses&&prevAnalyses.length>0;
-  S.activeQuestions=hasHistory?[...QUESTIONS_FULL]:QUESTIONS_FULL.slice(1);
+  S.ivMode=hasHistory;
+  S.activeQuestions=hasHistory?[QUESTIONS_FULL[1],QUESTIONS_FULL[2]]:QUESTIONS_FULL.slice(1);
   S.curQ=0;
   S.answers=Array(S.activeQuestions.length).fill(null).map(()=>({}));
+  S.interview=[];S.curIQ=null;
   renderQ();showScreen('screen-questions');
 }
 
@@ -1107,7 +1192,7 @@ function renderQ(){
     :t('privacy_shared')(spouseName());
 
   document.getElementById('btn-back').style.visibility=S.curQ===0?'hidden':'visible';
-  document.getElementById('btn-next').textContent=S.curQ===total-1?t('btn_finish'):t('btn_next');
+  document.getElementById('btn-next').textContent=(S.curQ===total-1&&!S.ivMode)?t('btn_finish'):t('btn_next');
 }
 
 function selQScale(id,val,si){
@@ -1125,18 +1210,171 @@ function saveQ(){
 async function nextQuestion(){
   saveQ();
   if(S.curQ<S.activeQuestions.length-1){S.curQ++;renderQ();}
+  else if(S.ivMode){startInterview();}
   else{
     const week=getWeekNumber(),year=new Date().getFullYear();
     const encAnswers={e:await enc(JSON.stringify(S.answers))};
     await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:encAnswers,lang});
     S.done[S.myIndex]=true;
-    document.getElementById('done-one-title').textContent=t('done_title')(myName());
-    document.getElementById('done-one-sub').textContent=(S.done[0]&&S.done[1])?t('done_sub_both'):t('done_sub_waiting')(spouseName());
+    renderDoneOne();
     showScreen('screen-done-one');
   }
 }
 
+function renderDoneOne(){
+  document.getElementById('done-one-title').textContent=t('done_title')(myName());
+  document.getElementById('done-one-sub').textContent=(S.done[0]&&S.done[1])?t('done_sub_both'):t('done_sub_waiting')(spouseName());
+}
+
 function prevQuestion(){saveQ();if(S.curQ>0){S.curQ--;renderQ();}}
+
+// ── INTERVIEW (uke 2+) ────────────────────────────────────────────────────
+const IV_MAX=10;
+
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+async function startInterview(){
+  showScreen('screen-interview');
+  document.getElementById('iv-badge').textContent=t('badge_private');
+  document.getElementById('iv-privacy').textContent=t('privacy_private')(spouseName());
+  renderIvThinking();
+  try{S.ivCtx=await buildIvContext();}catch(e){console.error(e);S.ivCtx='';}
+  askInterview();
+}
+
+function fmtOwnAnswers(ans,qt){
+  if(Array.isArray(ans)){
+    const qs=ans.length===QUESTIONS_FULL.length?[...QUESTIONS_FULL]:QUESTIONS_FULL.slice(1);
+    return qs.map((q,i)=>{
+      const a=ans[i]||{};
+      if(q.type==='statements')return ['qa','qb','qc'].map((id,si)=>`${(qt.statements[q.stmtIdx]||[])[si]}: ${a[id]||'?'}/5`).join('\n');
+      return `${qt.q_texts[q.textIdx]}\n${a.text||'(blank)'}`;
+    }).join('\n');
+  }
+  let o='';
+  (ans.scales||[]).forEach((a,i)=>{
+    const q=QUESTIONS_FULL[i+1];
+    ['qa','qb','qc'].forEach((id,si)=>{o+=`${(qt.statements[q.stmtIdx]||[])[si]}: ${a[id]||'?'}/5\n`;});
+  });
+  (ans.interview||[]).forEach(x=>{o+=`Q: ${x.q}\nA: ${x.selected}${x.comment?' – '+x.comment:''}\n`;});
+  return o;
+}
+
+async function buildIvContext(){
+  const me=S.myIndex, qt=T[lang];
+  const {data:profs}=await sb.from('profiles').select().eq('couple_id',S.coupleId).eq('person_index',me).limit(1);
+  const p=profs?.[0]||{};
+  const prof={challenge:await dec(p.challenge||''),good:await dec(p.good||''),hope:await dec(p.hope||'')};
+  const {data:hist}=await sb.from('analyses').select().eq('couple_id',S.coupleId).order('created_at',{ascending:false}).limit(3);
+  const histTxt=(await Promise.all((hist||[]).map(async a=>{
+    const sa=await dec(a.shared_analysis);
+    const rs=me===0?a.rating_shared_1:a.rating_shared_2;
+    const rp=me===0?a.rating_private_1:a.rating_private_2;
+    return `Week ${a.week_number} (their rating of shared analysis: ${rs||'?'}/5, of private reflection: ${rp||'?'}/5):\n${sa.substring(0,350)}...`;
+  }))).join('\n\n');
+  const {data:prevS}=await sb.from('sessions').select().eq('couple_id',S.coupleId).eq('person_index',me).order('created_at',{ascending:false}).limit(2);
+  const prevTxt=(await Promise.all((prevS||[]).map(async s=>{
+    const raw=s.answers||{};
+    const a=raw.e?JSON.parse(await dec(raw.e)):raw;
+    return `Week ${s.week_number}:\n${fmtOwnAnswers(a,qt)}`;
+  }))).join('\n\n');
+  let scalesTxt='';
+  S.answers.forEach((a,i)=>{
+    const q=S.activeQuestions[i];
+    if(q&&q.type==='statements')['qa','qb','qc'].forEach((id,si)=>{scalesTxt+=`${(qt.statements[q.stmtIdx]||[])[si]}: ${(a||{})[id]||'?'}/5\n`;});
+  });
+  return `=== ${myName()} – own profile (private) ===\nChallenges: ${prof.challenge||'-'}\nWhat works: ${prof.good||'-'}\nHope: ${prof.hope||'-'}\n\n=== Previous shared analyses (read by both) ===\n${histTxt||'-'}\n\n=== ${myName()}'s own previous answers (private) ===\n${prevTxt||'-'}\n\n=== This week's self-ratings ===\n${scalesTxt||'-'}`;
+}
+
+async function askInterview(){
+  renderIvThinking();
+  const n=S.interview.length;
+  const transcript=S.interview.map((x,i)=>`Q${i+1}: ${x.q}\nChosen: ${x.selected}${x.comment?' – '+x.comment:''}`).join('\n');
+  const instr=`[INTERVIEW]
+You are conducting a short private weekly check-in with ${myName()}. The context above contains ONLY their own data. Never reference, guess at, or ask about the spouse's answers or inner life – only ${myName()}'s own experience and actions.
+
+Respond ONLY with raw JSON, no markdown, no text outside the JSON:
+{"question":"...","options":["...","...","...","..."],"done":false}
+
+Internal diagnostic map (never name frameworks or these terms to the user): primary need to feel loved vs respected; the negative spiral where hurt reactions feed each other; breaking the pattern unilaterally; decoding the spouse's reaction as an unmet need rather than an attack; assuming goodwill; not wrong, just different; ways of giving love: closeness, openness, understanding, peacemaking, loyalty, esteem; ways of giving respect: appreciating work and effort, trust, valuing insight, friendship, physical intimacy; destructive patterns: criticism, contempt, defensiveness, withdrawal; repair attempts.
+
+Strategy:
+- Open by following up on the most recent shared analysis and its invitation – did they notice anything, did something shift?
+- Build each question on the previous selections. Move from broad (how the week felt) toward narrow (which need was unmet, which pattern showed up, what they themselves did).
+- Goal: by the end you know which ONE principle this person most needs this week.
+- 4-5 options spanning the honest spectrum: positive, neutral, negative, and "nothing happened / didn't think about it". Never only positive options. Keep each option short (max ~10 words).
+- Do NOT include an "Other" option – the app adds it automatically.
+- You have asked ${n} of max ${IV_MAX} questions. Aim for 6-8 in total, minimum 3. If the last 2-3 answers are flat or disengaged, finish early.
+- To finish: {"question":"<one warm closing sentence>","options":[],"done":true}
+- Warm, concrete, everyday language. Write in ${lang==='no'?'Norwegian':'English'}.`;
+  const prompt=`${S.ivCtx}\n\n=== Interview so far (${n} answered) ===\n${transcript||'(not started)'}\n\n${instr}`;
+  try{
+    const text=await callClaude([{role:'user',content:prompt}],600);
+    const clean=text.replace(/```json|```/g,'').trim();
+    const j=JSON.parse(clean.substring(clean.indexOf('{'),clean.lastIndexOf('}')+1));
+    if(j.done===true||n>=IV_MAX){renderIvClosing(j.done===true?j.question:'');}
+    else{S.curIQ=j;renderIvQuestion(j);}
+  }catch(e){console.error(e);renderIvError();}
+}
+
+function renderIvThinking(){
+  document.getElementById('iv-counter').textContent='';
+  document.getElementById('iv-question').textContent='';
+  document.getElementById('iv-area').innerHTML=`<div class="iv-thinking"><span></span><span></span><span></span></div><div style="text-align:center;font-size:12px;color:var(--ink-muted)">${t('iv_thinking')}</div>`;
+}
+
+function renderIvQuestion(j){
+  document.getElementById('iv-counter').textContent=t('iv_question_n')(S.interview.length+1);
+  document.getElementById('iv-question').textContent=j.question;
+  const opts=(j.options||[]).slice(0,5);
+  document.getElementById('iv-area').innerHTML=opts.map((o,i)=>
+    `<button class="iv-opt" onclick="ivSelect(${i})">${escapeHtml(o)}</button>`).join('')
+    +`<button class="iv-opt" onclick="ivOther()">${t('iv_other')}</button>`
+    +`<div id="iv-other-box" style="display:none;margin-top:4px"><textarea id="iv-other-text" rows="2" placeholder="${t('iv_other_placeholder')}"></textarea><button class="btn btn-primary" style="margin-top:8px" onclick="ivSendOther()">${t('iv_send')}</button></div>`;
+}
+
+function ivSelect(i){
+  const j=S.curIQ;if(!j)return;
+  S.interview.push({q:j.question,selected:(j.options||[])[i],comment:''});
+  S.curIQ=null;
+  if(S.interview.length>=IV_MAX){renderIvClosing('');return;}
+  askInterview();
+}
+
+function ivOther(){
+  const b=document.getElementById('iv-other-box');
+  b.style.display='block';
+  document.getElementById('iv-other-text').focus();
+}
+
+function ivSendOther(){
+  const j=S.curIQ;if(!j)return;
+  const txt=(document.getElementById('iv-other-text').value||'').trim();
+  S.interview.push({q:j.question,selected:t('iv_other'),comment:txt});
+  S.curIQ=null;
+  if(S.interview.length>=IV_MAX){renderIvClosing('');return;}
+  askInterview();
+}
+
+function renderIvClosing(msg){
+  document.getElementById('iv-counter').textContent='';
+  document.getElementById('iv-question').textContent=msg||'';
+  document.getElementById('iv-area').innerHTML=`<button class="btn btn-primary" onclick="this.disabled=true;finishInterview()">${t('iv_finish')}</button>`;
+}
+
+function renderIvError(){
+  document.getElementById('iv-area').innerHTML=`<div style="background:#FBF0EF;border:0.5px solid #C4716A;border-radius:var(--radius-sm);padding:12px;font-size:13px;color:#A05550;margin-bottom:8px">${t('iv_error')}</div><button class="btn btn-gold" onclick="askInterview()">${t('iv_retry')}</button>`;
+}
+
+async function finishInterview(){
+  const week=getWeekNumber(),year=new Date().getFullYear();
+  const payload={scales:S.answers,interview:S.interview};
+  const encAnswers={e:await enc(JSON.stringify(payload))};
+  await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:encAnswers,lang});
+  S.done[S.myIndex]=true;
+  renderDoneOne();
+  showScreen('screen-done-one');
+}
 
 // ── ANALYSIS ──────────────────────────────────────────────────────────────
 async function generateAnalysis(){
@@ -1181,8 +1419,13 @@ async function generateAnalysis(){
     };
     const qt0=T[lang0],qt1=T[lang1];
 
-    function fmtP(name,prof,ans,qt,activeQs){
-      let o=`=== ${name} – Profile ===\nHow they met: ${prof.met||'not provided'}\nChildren: ${prof.children||'not provided'}\nChallenges: ${prof.challenge||'not provided'}\nWhat works: ${prof.good||'not provided'}\nHope: ${prof.hope||'not provided'}\nScores (1-5): Expresses needs: ${(prof.scales||[])[0]||'?'}, Understands spouse needs: ${(prof.scales||[])[1]||'?'}, Recovers from conflict: ${(prof.scales||[])[2]||'?'}\n\n=== ${name} – Weekly answers ===\n`;
+    function fmtProfile(name,prof){
+      return `=== ${name} – Profile ===\nHow they met: ${prof.met||'not provided'}\nChildren: ${prof.children||'not provided'}\nChallenges: ${prof.challenge||'not provided'}\nWhat works: ${prof.good||'not provided'}\nHope: ${prof.hope||'not provided'}\nScores (1-5): Expresses needs: ${(prof.scales||[])[0]||'?'}, Understands spouse needs: ${(prof.scales||[])[1]||'?'}, Recovers from conflict: ${(prof.scales||[])[2]||'?'}`;
+    }
+
+    function fmtP(name,prof,ans,qt){
+      const activeQs=Array.isArray(ans)&&ans.length===QUESTIONS_FULL.length?[...QUESTIONS_FULL]:QUESTIONS_FULL.slice(1);
+      let o=fmtProfile(name,prof)+`\n\n=== ${name} – Weekly answers ===\n`;
       activeQs.forEach((q,i)=>{
         o+=`\nQ${i+1} (${q.private?'PRIVATE':'shared'}): ${qt.q_texts[q.textIdx]}\n`;
         const a=ans[i]||{};
@@ -1192,18 +1435,30 @@ async function generateAnalysis(){
       return o;
     }
 
-    const analysisHasQ1 = history && history.length > 0;
-    const analysisActiveQs = analysisHasQ1 ? [...QUESTIONS_FULL] : QUESTIONS_FULL.slice(1);
+    function fmtPIv(name,prof,ans,qt){
+      let o=fmtProfile(name,prof)+`\n\n=== ${name} – Self-ratings this week ===\n`;
+      (ans.scales||[]).forEach((a,i)=>{
+        const q=QUESTIONS_FULL[i+1];
+        ['qa','qb','qc'].forEach((id,si)=>{o+=`  ${qt.statements[q.stmtIdx]?.[si]}: ${(a||{})[id]||'?'}/5\n`;});
+      });
+      o+=`\n=== ${name} – Private interview (PRIVATE – never quote, reference or reveal) ===\n`;
+      (ans.interview||[]).forEach((x,i)=>{o+=`Q${i+1}: ${x.q}\nChose: ${x.selected}${x.comment?` – "${x.comment}"`:''}\n`;});
+      return o;
+    }
+
+    function fmtPerson(name,prof,ans,qt){
+      return (ans&&!Array.isArray(ans)&&ans.interview!==undefined)?fmtPIv(name,prof,ans,qt):fmtP(name,prof,ans,qt);
+    }
 
     const [n0,n1]=S.names;
     const sharedLang=lang0===lang1?lang0:'en';
 
-    const prompt=`${fmtP(n0,dp0,s0,qt0,analysisActiveQs)}\n\n${fmtP(n1,dp1,s1,qt1,analysisActiveQs)}${histCtx}
+    const prompt=`${fmtPerson(n0,dp0,s0,qt0)}\n\n${fmtPerson(n1,dp1,s1,qt1)}${histCtx}
 
 Instructions:
 
 [SHARED]
-Shared analysis, 250-300 words. Written to be read together. Structure: ~70% teaching one principle from the framework (as a wise course leader would), then brief recognition in general terms ("many couples experience...", "this can lead to..."), then one concrete low-threshold invitation for this week. Never reveal who said what. Never mention specific objects, places or activities from the answers. If only ONE person mentioned something, never present it as something "you both" notice.${history&&history.length>0?' If previous ratings were low (1-2), adjust tone and approach. Use Q1 answers as signal on whether last week\'s suggestion landed – build on it or adjust accordingly.':''} Write in ${sharedLang==='no'?'Norwegian':'English'}.
+Shared analysis, 250-300 words. Written to be read together. Structure: ~70% teaching one principle from the framework (as a wise course leader would), then brief recognition in general terms ("many couples experience...", "this can lead to..."), then one concrete low-threshold invitation for this week. Never reveal who said what. Never mention specific objects, places or activities from the answers. Never quote or reference interview questions, chosen options or comments – they are private input only. If only ONE person mentioned something, never present it as something "you both" notice. Choose the principle this week's evidence actually points to, even if it is the same as last week – but never repeat the same teaching: if a principle recurs, go deeper or take a new angle (previous analyses show what is already covered). If the evidence is ambiguous between several principles, prefer one not yet covered. If a repeated principle received low ratings (1-2), change approach entirely.${history&&history.length>0?' Use the opening interview answers as signal on whether last week\'s suggestion landed – build on it or adjust accordingly.':''} Write in ${sharedLang==='no'?'Norwegian':'English'}.
 
 [PRIVATE_1]
 Personal reflection for ${n0}, 120-150 words. Direct and personal. Only ${n0} reads this. One concrete pattern or blind spot. End with one question for ${n0} alone. Write in ${lang0==='no'?'Norwegian':'English'}.
@@ -1325,7 +1580,7 @@ async function loadAdminPanel(){
       </div>`;
     }).join('');
   } else {
-    list.innerHTML='<p style="font-size:13px;color:var(--ink-muted)">Ingen historikk ennå.</p>';
+    list.innerHTML=`<p style="font-size:13px;color:var(--ink-muted)">${t('no_history')}</p>`;
   }
 
   const sel=document.getElementById('admin-couple-select');
