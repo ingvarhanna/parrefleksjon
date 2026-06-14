@@ -168,7 +168,7 @@
     <div class="header-eyebrow" data-t="eyebrow">Ukentlig refleksjon</div>
     <h1>Par<em>refleksjon</em></h1>
     <p class="header-sub" data-t="tagline">Forankret i Love & Respect · Privat refleksjon · Felles vekst</p>
-    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v17.1</div>
+    <div style="font-size:10px;color:var(--ink-muted);margin-top:0.4rem">v17.3</div>
   </div>
 
   <!-- SCREEN: Login -->
@@ -627,12 +627,13 @@ const T = {
     no_history: 'Ingen historikk ennå.',
     iv_thinking: 'Tenker...',
     iv_other: 'Annet',
-    iv_other_placeholder: 'Skriv kort her (valgfritt)...',
+    iv_other_placeholder: 'Skriv kort – f.eks. "2 og 4" – eller noe eget...',
     iv_send: 'Send →',
     iv_finish: 'Fullfør →',
     iv_question_n: (n) => `Spørsmål ${n}`,
     iv_error: 'Noe gikk galt. Prøv igjen.',
     iv_retry: 'Prøv igjen',
+    iv_resume_confirm: 'Du har et påbegynt intervju denne uken. Vil du fortsette der du slapp? (Avbryt for å starte på nytt.)',
     login_err_email: 'Skriv inn e-postadressen din.',
     q_texts: [
       'Har du prøvd å gjøre noe annerledes siden sist?',
@@ -757,12 +758,13 @@ const T = {
     no_history: 'No history yet.',
     iv_thinking: 'Thinking...',
     iv_other: 'Other',
-    iv_other_placeholder: 'Write briefly here (optional)...',
+    iv_other_placeholder: 'Write briefly – e.g. "2 and 4" – or your own...',
     iv_send: 'Send →',
     iv_finish: 'Finish →',
     iv_question_n: (n) => `Question ${n}`,
     iv_error: 'Something went wrong. Please try again.',
     iv_retry: 'Try again',
+    iv_resume_confirm: 'You have an interview in progress this week. Continue where you left off? (Cancel to start over.)',
     login_err_email: 'Enter your email address.',
     q_texts: [
       'Have you tried doing anything differently since last time?',
@@ -1146,6 +1148,19 @@ const QUESTIONS_FULL=[
 async function startQuestions(){
   const {data:prevAnalyses}=await sb.from('analyses').select('id').eq('couple_id',S.coupleId).limit(1);
   const hasHistory=prevAnalyses&&prevAnalyses.length>0;
+  // Uferdig intervju denne uken? Tilby å fortsette.
+  if(hasHistory){
+    const saved=loadIvProgress();
+    if(saved&&(saved.interview&&saved.interview.length>0||saved.curIQ)){
+      S.ivMode=true;
+      S.activeQuestions=[QUESTIONS_FULL[1],QUESTIONS_FULL[2]];
+      if(confirm(t('iv_resume_confirm'))){
+        startInterview(saved);return;
+      } else {
+        clearIvProgress();
+      }
+    }
+  }
   S.ivMode=hasHistory;
   S.activeQuestions=hasHistory?[QUESTIONS_FULL[1],QUESTIONS_FULL[2]]:QUESTIONS_FULL.slice(1);
   S.curQ=0;
@@ -1233,12 +1248,44 @@ const IV_MAX=10;
 
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
-async function startInterview(){
+function ivStoreKey(){return `pr_iv_${S.coupleId}_${S.myIndex}_${getWeekNumber()}_${new Date().getFullYear()}`;}
+
+function saveIvProgress(){
+  try{
+    if(!S.coupleId||S.myIndex===null)return;
+    localStorage.setItem(ivStoreKey(),JSON.stringify({
+      scales:S.answers, interview:S.interview, curIQ:S.curIQ, ivCtx:S.ivCtx, ts:Date.now()
+    }));
+  }catch(e){console.warn('iv save failed',e);}
+}
+
+function clearIvProgress(){
+  try{localStorage.removeItem(ivStoreKey());}catch(e){}
+}
+
+function loadIvProgress(){
+  try{
+    const raw=localStorage.getItem(ivStoreKey());
+    if(!raw)return null;
+    return JSON.parse(raw);
+  }catch(e){return null;}
+}
+
+async function startInterview(resume){
   showScreen('screen-interview');
   document.getElementById('iv-badge').textContent=t('badge_private');
   document.getElementById('iv-privacy').textContent=t('privacy_private')(spouseName());
+  if(resume){
+    S.answers=resume.scales||S.answers;
+    S.interview=resume.interview||[];
+    S.ivCtx=resume.ivCtx||'';
+    if(resume.curIQ){S.curIQ=resume.curIQ;renderIvQuestion(resume.curIQ);return;}
+    // intervju påbegynt men neste spørsmål ikke hentet → hent neste
+    askInterview();return;
+  }
   renderIvThinking();
   try{S.ivCtx=await buildIvContext();}catch(e){console.error(e);S.ivCtx='';}
+  saveIvProgress();
   askInterview();
 }
 
@@ -1313,7 +1360,7 @@ Strategy:
     const clean=text.replace(/```json|```/g,'').trim();
     const j=JSON.parse(clean.substring(clean.indexOf('{'),clean.lastIndexOf('}')+1));
     if(j.done===true||n>=IV_MAX){renderIvClosing(j.done===true?j.question:'');}
-    else{S.curIQ=j;renderIvQuestion(j);}
+    else{S.curIQ=j;saveIvProgress();renderIvQuestion(j);}
   }catch(e){console.error(e);renderIvError();}
 }
 
@@ -1328,15 +1375,15 @@ function renderIvQuestion(j){
   document.getElementById('iv-question').textContent=j.question;
   const opts=(j.options||[]).slice(0,5);
   document.getElementById('iv-area').innerHTML=opts.map((o,i)=>
-    `<button class="iv-opt" onclick="ivSelect(${i})">${escapeHtml(o)}</button>`).join('')
-    +`<button class="iv-opt" onclick="ivOther()">${t('iv_other')}</button>`
+    `<button class="iv-opt" onclick="ivSelect(${i})"><span style="color:var(--gold);font-weight:600;margin-right:8px">${i+1}.</span>${escapeHtml(o)}</button>`).join('')
+    +`<button class="iv-opt" onclick="ivOther()"><span style="color:var(--ink-muted);font-weight:600;margin-right:8px">+</span>${t('iv_other')}</button>`
     +`<div id="iv-other-box" style="display:none;margin-top:4px"><textarea id="iv-other-text" rows="2" placeholder="${t('iv_other_placeholder')}"></textarea><button class="btn btn-primary" style="margin-top:8px" onclick="ivSendOther()">${t('iv_send')}</button></div>`;
 }
 
 function ivSelect(i){
   const j=S.curIQ;if(!j)return;
   S.interview.push({q:j.question,selected:(j.options||[])[i],comment:''});
-  S.curIQ=null;
+  S.curIQ=null;saveIvProgress();
   if(S.interview.length>=IV_MAX){renderIvClosing('');return;}
   askInterview();
 }
@@ -1351,7 +1398,7 @@ function ivSendOther(){
   const j=S.curIQ;if(!j)return;
   const txt=(document.getElementById('iv-other-text').value||'').trim();
   S.interview.push({q:j.question,selected:t('iv_other'),comment:txt});
-  S.curIQ=null;
+  S.curIQ=null;saveIvProgress();
   if(S.interview.length>=IV_MAX){renderIvClosing('');return;}
   askInterview();
 }
@@ -1371,6 +1418,7 @@ async function finishInterview(){
   const payload={scales:S.answers,interview:S.interview};
   const encAnswers={e:await enc(JSON.stringify(payload))};
   await sb.from('sessions').insert({couple_id:S.coupleId,person_index:S.myIndex,week_number:week,year,answers:encAnswers,lang});
+  clearIvProgress();
   S.done[S.myIndex]=true;
   renderDoneOne();
   showScreen('screen-done-one');
